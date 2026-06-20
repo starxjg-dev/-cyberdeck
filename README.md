@@ -23,24 +23,58 @@ That's just one protocol. Here's what else changes:
 - If you ask a complex "what's the best way to do X" question, your agent spawns 5 parallel strategies and picks the best one
 - If you install this on multiple agents, they share skills automatically (like Markus touching an android and it wakes up)
 
-## Quick Start
+## Try It Now (Zero Install)
+
+```bash
+git clone https://github.com/starxjg-dev/cyberdeck.git
+cd cyberdeck
+
+# Requires: Ollama running with any model
+pip install requests   # or: nothing — uses stdlib urllib
+
+python mini-agent.py "How many Python files are in this project?"
+```
+
+**You'll see the agent think, pick tools, and answer — in real time:**
+
+```
+  STEP 1/5
+  🤔 I need to count Python files. Let me use ls.
+  🔧 terminal(ls *.py)
+  👀 mini-agent.py
+
+  STEP 2/5
+  🤔 Only one .py file in root. Let me check subdirectories.
+  🔧 terminal(find . -name "*.py")
+
+  FINAL: 1 Python file in the project.
+
+```
+
+150 lines of Python. A complete ReAct agent you can read, run, and modify.
+
+[→ See the code](mini-agent.py) | [→ Step-by-step tutorial](demos/)
+
+## Quick Start (Full Cyberdeck)
 
 **Prerequisites:** [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed.
 
-### Install (30 seconds)
+### Install (one-click or manual)
 
+**One-click:**
 ```bash
-# 1. Clone the repo
-git clone https://github.com/starxjg-dev/cyberdeck.git
+# Windows
+setup.bat
 
-# 2. Copy the skill file
 # Linux / macOS
+chmod +x setup.sh && ./setup.sh
+```
+
+**Manual:**
+```bash
+git clone https://github.com/starxjg-dev/cyberdeck.git
 mkdir -p ~/.hermes/skills/software-development/cyberdeck/
 cp cyberdeck/SKILL.md ~/.hermes/skills/software-development/cyberdeck/
-
-# Windows
-mkdir E:\\.hermes\\skills\\software-development\\cyberdeck\\
-copy cyberdeck\\SKILL.md E:\\.hermes\\skills\\software-development\\cyberdeck\\
 ```
 
 **First time?** The [First Run Wizard](#-first-run-wizard-auto) scans your environment, detects available models, and shows what's ready. Zero manual config.
