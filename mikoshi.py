@@ -35,6 +35,11 @@ if sys.platform == 'win32':
 # ── Config ──────────────────────────────────────────────────
 MODEL = os.environ.get("CYBERDECK_MODEL", "qwen2.5:7b")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+try:
+    MAX_TOKENS = int(os.environ.get("CYBERDECK_MAX_TOKENS", "1024"))
+except ValueError:
+    print(f"⚠️  Invalid CYBERDECK_MAX_TOKENS, using default 1024")
+    MAX_TOKENS = 1024
 
 # ── Strategy Definitions ────────────────────────────────────
 
@@ -97,7 +102,7 @@ def ask_strategy(strategy_name, problem):
         "model": MODEL,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": s["temperature"], "num_predict": int(os.environ.get("CYBERDECK_MAX_TOKENS", "1024"))}
+        "options": {"temperature": s["temperature"], "num_predict": MAX_TOKENS}
     }).encode()
 
     req = urllib.request.Request(OLLAMA_URL, data=data,

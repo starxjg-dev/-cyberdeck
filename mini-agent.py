@@ -119,9 +119,12 @@ def web_fetch(url):
     url_lower = url.strip().lower()
     if url_lower.startswith(('file://', 'ftp://')):
         return "ERROR: blocked protocol — only http:// and https:// allowed"
-    for internal in ['127.0.0.1', 'localhost', '169.254.', '10.', '192.168.', '172.16.', '172.17.', '172.18.', '172.19.', '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.', '172.28.', '172.29.', '172.30.', '172.31.']:
-        if internal in url_lower:
-            return f"ERROR: blocked internal address ({internal}...) — external URLs only"
+    # Check for internal IPs in host portion only (before first / after ://)
+    import re as _re2
+    host_match = _re2.search(r'://([^/:]+)', url_lower)
+    host = host_match.group(1) if host_match else ''
+    if host.startswith(('127.', '10.', '192.168.')) or host == 'localhost' or host.startswith('169.254.') or host.startswith('172.') and 16 <= int(host.split('.')[1]) <= 31:
+        return f"ERROR: blocked internal host ({host}) — external URLs only"
     try:
         import urllib.request
         with urllib.request.urlopen(url, timeout=10) as resp:
@@ -140,7 +143,7 @@ def call_ollama(prompt):
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
             result = json.loads(resp.read())
-            text = result.get("response", "") or result.get("message", "") or json.dumps(result)
+            text = result.get("response", "") or result.get("message", "")
             if not text.strip():
                 raise ValueError(f"empty response from Ollama (keys: {list(result.keys())})")
             return text
