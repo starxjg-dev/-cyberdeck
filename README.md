@@ -95,6 +95,81 @@ With multiple LLM providers configured, Mikoshi transforms from "same brain, 5 p
 
 *Currently running: DeepSeek v4-pro (primary) + Gemini 2.5 Pro/Flash (multi-model).
 
+### 配置模型（新手 5 分钟接你自己的模型）
+
+**改两个文件。**
+
+#### 1. `.env` — 填 API Key
+
+复制 `.env.example` 为 `.env`，填上你要用的 provider 的 key：
+
+```bash
+# 选一个填
+DEEPSEEK_API_KEY=sk-xxx        # DeepSeek
+OPENAI_API_KEY=sk-xxx          # OpenAI / 第三方兼容
+GEMINI_API_KEY=xxx             # Gemini
+# Ollama 本地无需 key
+```
+
+#### 2. `config.yaml` — 改模型名（~10 处）
+
+找到你的 profile 配置：`~/.hermes/profiles/cyberdeck/config.yaml`
+
+**必须改的字段：**
+
+| 位置 | 字段 | 示例值 |
+|------|------|--------|
+| `model.default` | 主模型 | `gpt-4o` / `qwen2.5:7b` / `gemini-2.5-pro` |
+| `model.provider` | 主 provider | `openai` / `ollama` / `gemini` |
+| `auxiliary.approval` | 审批模型 | 同上 |
+| `auxiliary.compression` | 压缩模型 | 同上（flash 模型更省钱） |
+| `auxiliary.curator` | 管理模型 | 同上 |
+| `auxiliary.delegation` | 子代理模型 | 同上（建议用强模型） |
+| `auxiliary.kanban_decomposer` | 看板模型 | 同上 |
+| `auxiliary.skills_hub` | 技能模型 | 同上 |
+| `auxiliary.title_generation` | 标题模型 | 同上 |
+| `auxiliary.triage_specifier` | 分流模型 | 同上 |
+| `auxiliary.vision` | 视觉模型 | 同上 |
+| `auxiliary.web_extract` | 网页模型 | 同上 |
+
+**快速模板（找到对应段，整块替换）：**
+
+```yaml
+# --- OpenAI ---
+model:
+  default: gpt-4o
+  provider: openai
+auxiliary:
+  approval:      {api_key: '', base_url: '', extra_body: {}, model: gpt-4o-mini, provider: openai, timeout: 30}
+  compression:   {api_key: '', base_url: '', extra_body: {}, model: gpt-4o-mini, provider: openai, timeout: 120}
+  # ... 其余 auxiliary 全部改为 provider: openai, model: gpt-4o-mini
+
+# --- Ollama 本地（免费）---
+model:
+  default: qwen2.5:7b
+  provider: ollama
+# auxiliary 全部用 provider: ollama, model: qwen2.5:7b（或 gemma3:4b 省资源）
+
+# --- Gemini ---
+model:
+  default: gemini-2.5-pro
+  provider: gemini
+# auxiliary 全部用 provider: gemini, model: gemini-2.5-flash
+
+# --- DeepSeek（默认）---
+model:
+  default: deepseek-v4-pro
+  provider: deepseek
+# auxiliary 全部用 provider: deepseek, model: deepseek-v4-flash
+```
+
+3. 验证：
+```bash
+hermes --profile cyberdeck chat -q "你好，用中文回复"
+```
+
+搞不定？提 Issue，附上你的 provider 和报错信息。
+
 ## Version History
 
 | Version | Date | Theme | Key Additions |
