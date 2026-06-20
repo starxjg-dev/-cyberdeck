@@ -8,7 +8,19 @@
   <img src="https://img.shields.io/badge/docs-1296%20lines-orange?style=flat-square" alt="Docs">
 </p>
 
-A Hermes Agent skill that gives your agent 11 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, one-command setup, and real-time self-critique. Zero dependencies. One file. Drop it in and your agent gains self-awareness.
+A Hermes Agent skill that gives your agent 11 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, one-command setup, and real-time self-critique.
+
+## Two Ways to Use This
+
+| | Standalone Demos | Full Cyberdeck |
+|---|---|---|
+| **What** | `mikoshi.py` + `mini-agent.py` | All 11 protocols via SKILL.md |
+| **Needs** | Python + Ollama | [Hermes Agent](https://github.com/NousResearch/hermes-agent) |
+| **Runs** | `python mikoshi.py "your question"` | Agent loads SKILL.md → protocols activate automatically |
+| **Get it** | `git clone` → done | `git clone` → `setup.bat` → `hermes -s cyberdeck` |
+| **Why** | See Cyberdeck working immediately | Full self-evolution, multi-agent, self-repair |
+
+**9 of the 11 protocols** (Soulkiller, Self-Repair, Relic, Contagion, Jericho, etc.) need Hermes Agent's runtime — they intercept tool calls, spawn sub-agents, and manage state across sessions. The other 2 are standalone Python programs you can run right now.
 
 ## What Happens When You Use It
 
