@@ -106,7 +106,10 @@ def ask_strategy(strategy_name, problem):
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
             result = json.loads(resp.read())
-            return strategy_name, result["response"].strip()
+            text = result.get("response", "") or result.get("message", "") or json.dumps(result)
+            if not text.strip():
+                return strategy_name, f"ERROR: empty response from Ollama (keys: {list(result.keys())})"
+            return strategy_name, text.strip()
     except Exception as e:
         return strategy_name, f"ERROR: {e}"
 
@@ -272,8 +275,9 @@ def main():
                 results.append((name, response, scores))
                 print_strategy_result(name, response, scores)
 
-    if not results:
-        print("  ❌ All strategies failed. Is Ollama running?")
+    valid_results = [r for r in results if not r[2].get("error")]
+    if not valid_results:
+        print("  ❌ All strategies failed. Is Ollama running? (ollama serve)")
         sys.exit(1)
 
     elapsed = time.time() - start_time

@@ -128,7 +128,11 @@ def call_ollama(prompt):
         headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
-            return json.loads(resp.read())["response"]
+            result = json.loads(resp.read())
+            text = result.get("response", "") or result.get("message", "") or json.dumps(result)
+            if not text.strip():
+                raise ValueError(f"empty response from Ollama (keys: {list(result.keys())})")
+            return text
     except Exception as e:
         print(f"\n❌ Cannot reach Ollama at {OLLAMA_URL}")
         print(f"   Error: {e}")

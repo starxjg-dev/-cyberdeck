@@ -4,3 +4,4 @@ push.bat
 __pycache__/
 *.pyc
 *.pyo
+set_meta.bat
