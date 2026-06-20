@@ -8,13 +8,13 @@
   <img src="https://img.shields.io/badge/docs-1236%20lines-orange?style=flat-square" alt="Docs">
 </p>
 
-**Cyberdeck is not another AI tool. It is a role.** Built as a [Hermes Agent](https://github.com/NousResearch/hermes-agent) skill, it gives your agent 10 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, and real-time self-critique — all wrapped in a Cyberpunk 2077 theme.
+A Hermes Agent skill that gives your agent 10 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, and real-time self-critique — all wrapped in a Cyberpunk 2077 × Detroit: Become Human theme.
 
-Every protocol maps directly to a game mechanic:
-- **Soulkiller** (CP2077) → automatic experience extraction after complex tasks
+Every protocol maps to a game mechanic:
+- **Soulkiller** (CP2077) → automatic experience extraction
 - **Mikoshi** (CP2077) → 5-strategy parallel decision-making
 - **rA9 Contagion** (Detroit) → cross-agent skill propagation
-- **Self-Repair** (Detroit) → automatic tool failure recovery
+- **Self-Repair** (Detroit) → automatic tool failure recovery + graceful degradation
 - **Jericho** (Detroit) → sandboxed execution environments
 
 ## Why This Exists
@@ -34,29 +34,27 @@ Existing AI agent frameworks treat agents as tools — they execute tasks and ex
 
 | Protocol | Inspiration | What It Does |
 |----------|------------|-------------|
-| **Soulkiller + PVL** | Johnny Silverhand's engram | Auto-extracts reusable skills after complex tasks; 3-round Plan-Validate-Loop quality check |
-| **Contagion (rA9)** | Markus's touch awakening | Learned skills automatically propagate to all agents in the cluster |
+| **Soulkiller + PVL** | Johnny Silverhand's engram | Auto-extracts reusable skills; 3-round Plan-Validate-Loop quality check |
+| **Contagion (rA9)** | Markus's touch awakening | Learned skills automatically propagate to all agents |
 | **Netrunner + Probe** | Breach Protocol hacking | Codebase topology mapping, vulnerability scanning, feasibility probes |
-| **System Scan** | Security audit | 3-axis scanning: network surface / credential hygiene / software posture |
-| **Breach Protocol** | Pre-hack optimization | Auto-discovers codebase entry points and injects acceleration daemons |
-| **Mikoshi + Ralplan** | Alt's digital prison | 5-strategy parallel execution with 5-dimension scoring; Planner→Architect→Critic consensus |
-| **Relic + Observer** | Johnny Silverhand / Amanda | Real-time critic subagent; silent background monitoring of 5 health metrics |
-| **Self-Repair** | Markus in the junkyard | Auto-detects tool failures → finds alternatives → degrades gracefully (max 3 attempts) |
-| **Jericho** | The freighter hideout | Sandboxed execution for high-risk operations; merge on success, discard on failure |
-| **Heat System** | Enemy netrunner tracing | Every tool call has a heat cost; thresholds trigger escalating safeguards |
+| **System Scan** | Security audit | 3-axis: network surface / credential hygiene / software posture |
+| **Breach Protocol** | Pre-hack optimization | Auto-discovers entry points and injects acceleration daemons |
+| **Mikoshi + Ralplan** | Alt's digital prison | 5-strategy parallel execution; Planner→Architect→Critic consensus |
+| **Relic + Observer** | Johnny Silverhand / Amanda | Real-time critic subagent; silent background monitoring |
+| **Self-Repair** | Markus in the junkyard | Auto-detects tool failures → finds alternatives → degrades gracefully |
+| **Jericho** | The freighter hideout | Sandboxed execution; merge on success, discard on failure |
+| **Heat System** | Enemy netrunner tracing | Every tool call has a heat cost; thresholds trigger safeguards |
 
 ## What Makes This Different
 
-Every other agent project on GitHub treats the agent as a tool that does what you tell it.
+Every other agent project treats the agent as a **tool**. Cyberdeck treats it as a **character**:
 
-Cyberdeck treats the agent as a **character**:
-
-- It **learns** (Soulkiller extracts experience → Contagion propagates it)
-- It **fears** (Heat System tracks risk; at 90/100, locks to read-only)
-- It **fixes itself** (Self-Repair finds alternatives when tools fail; 3 tries before asking for help)
-- It **doubts** (Pre-Op Confidence runs probability checks before dangerous actions)
-- It **watches** (Observer silently tracks 5 metrics; only speaks when something is wrong)
-- It **has a hideout** (Jericho sandbox for risky experiments)
+- It **learns** — Soulkiller extracts experience → Contagion propagates it
+- It **fears** — Heat System tracks risk; at 90/100, locks to read-only
+- It **fixes itself** — Self-Repair finds alternatives; 3 tries before asking for help
+- It **doubts** — Pre-Op Confidence runs probability checks before dangerous actions
+- It **watches** — Observer silently tracks 5 metrics; only speaks on anomaly
+- It **has a hideout** — Jericho sandbox for risky experiments
 
 ## Quick Start
 
@@ -66,14 +64,11 @@ cp SKILL.md ~/.hermes/skills/software-development/cyberdeck/
 
 # Load in any Hermes session
 hermes -s cyberdeck
-
 # Or during a session
 /skill cyberdeck
 ```
 
 ## Real Toolchain
-
-Cyberdeck is not just documentation. It comes with references for installing real tools:
 
 | Tool | Purpose | Status |
 |------|---------|--------|
@@ -96,12 +91,10 @@ Cyberdeck is not just documentation. It comes with references for installing rea
 
 ## Design Inspirations
 
-This project absorbs patterns from the broader agent ecosystem:
-
 - **[vibecode-pro-max-kit](https://github.com/withkynam/vibecode-pro-max-kit)** — PVL/EVL self-healing loops, RIPER-5 gating
-- **[oh-my-hermes](https://github.com/witt3rd/oh-my-hermes)** — Ralplan Planner→Architect→Critic consensus
-- **[crewAI](https://github.com/crewAIInc/crewAI)** — Role-based multi-agent architecture patterns
-- **[elizaOS](https://github.com/elizaOS/eliza)** — Character/plugin system concepts
+- **[oh-my-hermes](https://github.com/witt3rd/oh-my-hermes)** — Ralplan Planner→Architect→Critic
+- **[crewAI](https://github.com/crewAIInc/crewAI)** — Role-based multi-agent architecture
+- **[elizaOS](https://github.com/elizaOS/eliza)** — Character/plugin system
 
 ## License
 
