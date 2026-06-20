@@ -94,7 +94,7 @@ def ask_strategy(strategy_name, problem):
         "model": MODEL,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": s["temperature"], "num_predict": 512}
+        "options": {"temperature": s["temperature"], "num_predict": int(os.environ.get("CYBERDECK_MAX_TOKENS", "1024"))}
     }).encode()
 
     req = urllib.request.Request(OLLAMA_URL, data=data,
@@ -205,6 +205,11 @@ def print_winner(results):
     """Compare and announce winner."""
     ranked = sorted(results, key=lambda x: x[2]["total"], reverse=True)
     winner_name, winner_response, winner_scores = ranked[0]
+
+    if winner_scores.get("error"):
+        print("  ❌ No valid strategy — all returned errors.")
+        return None
+
     s = STRATEGIES[winner_name]
 
     print(f"  ╔══════════════════════════════════════════════════════╗")
@@ -256,9 +261,17 @@ def main():
                    for name in STRATEGIES}
         for future in as_completed(futures):
             name, response = future.result()
-            scores = score_response(response, name)
-            results.append((name, response, scores))
-            print_strategy_result(name, response, scores)
+            if response.startswith("ERROR:"):
+                print(f"  ⚠️  {STRATEGIES[name]['emoji']} {STRATEGIES[name]['label']} failed: {response}")
+                results.append((name, response, {"total": 0, "correctness": 0, "efficiency": 0, "completeness": 0, "novelty": 0, "actionability": 0, "error": True}))
+            else:
+                scores = score_response(response, name)
+                results.append((name, response, scores))
+                print_strategy_result(name, response, scores)
+
+    if not results:
+        print("  ❌ All strategies failed. Is Ollama running?")
+        sys.exit(1)
 
     elapsed = time.time() - start_time
     winner = print_winner(results)

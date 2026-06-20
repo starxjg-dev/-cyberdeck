@@ -81,12 +81,26 @@ def file_search(pattern):
         return f"No matches for '{pattern}'"
     return '\n'.join(results[:30]) + (f"\n... and {len(results)-30} more" if len(results) > 30 else "")
 
+# Commands that are never allowed (prevent model from running destructive ops)
+DENY_LIST = ["rm -rf", "del /F", "rd /S", "format ", "shutdown", "mkfs", "dd if=", ":(){ :|:& };:"]
+
 def terminal_cmd(command):
-    """Run a shell command safely."""
+    """Run a read-only shell command. Destructive commands are blocked."""
+    cmd_lower = command.lower()
+    for deny in DENY_LIST:
+        if deny.lower() in cmd_lower:
+            return f"ERROR: Blocked dangerous command (matched: '{deny}')"
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15)
-        output = (result.stdout + result.stderr).strip()
-        return output[:2000] if output else "(no output)"
+        result = subprocess.run(
+            command, shell=True, capture_output=True,
+            text=True, encoding='utf-8', errors='replace', timeout=15
+        )
+        parts = []
+        if result.stdout.strip():
+            parts.append(f"stdout:\n{result.stdout.strip()[:1800]}")
+        if result.stderr.strip():
+            parts.append(f"stderr:\n{result.stderr.strip()[:1800]}")
+        return "\n".join(parts) if parts else "(no output)"
     except subprocess.TimeoutExpired:
         return "ERROR: Command timed out (15s)"
     except Exception as e:
@@ -115,7 +129,9 @@ def call_ollama(prompt):
     except Exception as e:
         print(f"\n❌ Cannot reach Ollama at {OLLAMA_URL}")
         print(f"   Error: {e}")
-        print(f"   Is Ollama running? Try: ollama serve")
+        print(f"   Fix: ollama serve           (start Ollama)")
+        print(f"        ollama pull {MODEL}    (pull model)")
+        print(f"   Or set: CYBERDECK_MODEL=... OLLAMA_URL=...")
         sys.exit(1)
 
 def run_agent(task):
