@@ -58,15 +58,22 @@ Every other agent project treats the agent as a **tool**. Cyberdeck treats it as
 
 ## Quick Start
 
+**Prerequisites:** [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed.
+
 ```bash
-# Install as a Hermes Agent skill
+# Linux / macOS
 cp SKILL.md ~/.hermes/skills/software-development/cyberdeck/
+
+# Windows
+mkdir E:\\.hermes\\skills\\software-development\\cyberdeck
+copy SKILL.md E:\\.hermes\\skills\\software-development\\cyberdeck\\
 
 # Load in any Hermes session
 hermes -s cyberdeck
-# Or during a session
-/skill cyberdeck
+# Or mid-session: /skill cyberdeck
 ```
+
+**Dependencies:** None. Pure SKILL.md — all 10 protocols are behavioral patterns executed by your Hermes Agent. Optional toolchain (Ollama, ComfyUI, nuclei) enhances specific protocols but is not required.
 
 ## Real Toolchain
 
