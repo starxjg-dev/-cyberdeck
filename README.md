@@ -29,31 +29,22 @@ That's just one protocol. Here's what else changes:
 git clone https://github.com/starxjg-dev/cyberdeck.git
 cd cyberdeck
 
-# Requires: Ollama running with any model
-pip install requests   # or: nothing — uses stdlib urllib
-
-python mini-agent.py "How many Python files are in this project?"
+# Requires: Ollama running with any model (free, local)
+python mikoshi.py "Should a startup use microservices or a monolith?"
 ```
 
-**You'll see the agent think, pick tools, and answer — in real time:**
+**3 AI strategies run in parallel, compare, and pick a winner:**
 
 ```
-  STEP 1/5
-  🤔 I need to count Python files. Let me use ls.
-  🔧 terminal(ls *.py)
-  👀 mini-agent.py
-
-  STEP 2/5
-  🤔 Only one .py file in root. Let me check subdirectories.
-  🔧 terminal(find . -name "*.py")
-
-  FINAL: 1 Python file in the project.
-
+  🔵 Conservative  ·  52/100
+  🔴 Aggressive    ·  60/100  
+  🟢 Analytical    ·  72/100  ⭐ WINNER
+  
+  Why Analytical won: data-driven comparison of 3 options
+  with concrete metrics and scenario-based recommendation.
 ```
 
-150 lines of Python. A complete ReAct agent you can read, run, and modify.
-
-[→ See the code](mini-agent.py) | [→ Step-by-step tutorial](demos/)
+[→ See the code](mikoshi.py) | [→ Try the basic agent](mini-agent.py)
 
 ## Quick Start (Full Cyberdeck)
 
