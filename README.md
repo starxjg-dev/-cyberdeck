@@ -122,9 +122,13 @@ With multiple LLM providers configured, Mikoshi transforms from "same brain, 5 p
 - **[crewAI](https://github.com/crewAIInc/crewAI)** — Role-based multi-agent architecture
 - **[elizaOS](https://github.com/elizaOS/eliza)** — Character/plugin system
 
+## ⭐ Star History
+
+If you find this useful, consider starring the repo — it helps others discover Cyberdeck and motivates further development.
+
 ## License
 
-MIT — build your own cyberdeck.
+MIT — build your own cyberdeck. PRs welcome.
 
 ---
 
