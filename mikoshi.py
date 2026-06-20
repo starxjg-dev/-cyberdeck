@@ -27,7 +27,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Fix Windows GBK encoding for emoji output
 if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8')
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except (AttributeError, OSError):
+        pass  # stdout is piped/redirected, emoji rendering is best-effort
 
 # ── Config ──────────────────────────────────────────────────
 MODEL = os.environ.get("CYBERDECK_MODEL", "qwen2.5:7b")

@@ -33,6 +33,7 @@ Eleven protocols + heat economy + atomic queue + parallel critic + self-healing 
 - **Self-Repair** — 马库斯自修：工具失败→自动替代→降级运行
 - **Jericho** — 废船沙箱：隔离执行→成功合并
 - **First Run Wizard** — 新手一键配置：环境扫描→模型检测→零配置就绪
+- **Heat System** — 热痕追踪经济：操作风险评估→阈值保护→自动降热
 
 ---
 
