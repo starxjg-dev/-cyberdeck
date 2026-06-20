@@ -1,3 +1,6 @@
 .token
 .git-credentials
 push.bat
+__pycache__/
+*.pyc
+*.pyo
