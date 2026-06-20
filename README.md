@@ -70,7 +70,7 @@ hermes -s cyberdeck
 
 ## Real Toolchain
 
-Cyberdeck comes with references for installing real tools. None are required — protocols work without them.
+Cyberdeck references for installing real tools. None are required.
 
 | Tool | Purpose | Status |
 |------|---------|--------|
@@ -80,6 +80,20 @@ Cyberdeck comes with references for installing real tools. None are required —
 | **Qdrant + MCP SDK** | Vector memory, protocol extension | ✅ Tested |
 | **n8n + NocoDB** | Workflow automation + database | 📦 Downloaded |
 | **Playwright MCP** | Browser automation | ✅ Tested |
+
+## Multi-Model Mikoshi (Advanced)
+
+With multiple LLM providers configured, Mikoshi transforms from "same brain, 5 prompts" to "5 different brains solving the same problem":
+
+| Strategy | Best Model | Strength |
+|----------|-----------|----------|
+| Conservative | Claude | Finds worst-case failure modes |
+| Aggressive | GPT-4o | Most complete logic chains |
+| Analytical | DeepSeek v4-pro | Native Chinese reasoning |
+| Creative | Gemini 2.5 Pro | 1M context — sees the whole codebase |
+| Practical | Grok | Non-consensus wildcard solutions |
+
+*Currently running: DeepSeek v4-pro (primary) + Gemini 2.5 Pro/Flash (multi-model).
 
 ## Version History
 
