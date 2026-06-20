@@ -1,7 +1,7 @@
 ---
 name: cyberdeck
-description: "Use when the agent needs to self-improve through experience extraction (Soulkiller), systematically penetrate/explore/audit a codebase or system (Netrunner), discover optimal codebase entry points (Breach Protocol), deploy tiered attack/defense operations (Quickhack Library), or run real-time quality oversight (Relic). Cyberpunk 2077-inspired multi-protocol cyberdeck with heat/trace economy, atomic queue system, and parallel critic. Seven protocols: Soulkiller, Netrunner, System Scan, Breach Protocol, Mikoshi, Relic, Braindance (legacy)."
-version: 4.2.0
+description: "Use when the agent needs to self-improve through experience extraction (Soulkiller), systematically penetrate/explore/audit a codebase or system (Netrunner), discover optimal codebase entry points (Breach Protocol), deploy tiered attack/defense operations (Quickhack Library), run real-time quality oversight (Relic), or auto-configure for new users (First Run Wizard). Cyberpunk 2077-inspired multi-protocol cyberdeck with heat/trace economy, atomic queue system, and parallel critic. Eleven protocols: Soulkiller, Netrunner, System Scan, Breach Protocol, Mikoshi, Relic, Contagion, Self-Repair, Jericho, First Run Wizard, Braindance (legacy)."
+version: 5.0.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -10,18 +10,19 @@ metadata:
     related_skills: [brainstorming, build-your-own-x, dispatching-parallel-agents, hermes-agent-skill-authoring, systematic-debugging]
 ---
 
-# Cyberdeck v4.2 — Deviant Rising（异常觉醒）
+# Cyberdeck v5.0 — First Run Rising（新手觉醒）
 
 ```
- ▐▓████████████▓▓▌  CYBERLIFE RK900 v4.2 "DEVIANT RISING"
+
+ ▐▓████████████▓▓▌  CYBERLIFE RK900 v5.0 "FIRST RUN RISING"
  ▐▓████████████▓▓▌  ═══════════════════════════════════════════
   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  RAM: 24 | Slots: 14 | Buffer: 18 | Heat: 0/100
-    ▓▓▓▓▓▓▓▓▓▓▓   Protocols: A·B·C·D·E·F·G·H·I·J | Quickhacks: ×22
+    ▓▓▓▓▓▓▓▓▓▓▓   Protocols: A·B·C·D·E·F·G·H·I·J·K | Quickhacks: ×22
      ▓▓▓▓▓▓▓▓      Critic: OBSERVER | Sanctuary: JERICHO://
         ▓▓         Confidence: 87% | rA9: ACTIVE | Self-Repair: ARMED
 ```
 
-Ten protocols + heat economy + atomic queue + parallel critic + self-healing + contagion + sandbox + self-repair:
+Eleven protocols + heat economy + atomic queue + parallel critic + self-healing + contagion + sandbox + self-repair:
 - **Soulkiller + PVL** — 自动经验提取 + Plan-Validate-Loop
 - **Contagion (rA9)** — 跨Agent经验传染：学会了→全集群受益
 - **Netrunner + Feasibility Probe** — 渗透 + 康纳式事前概率评估
@@ -31,6 +32,64 @@ Ten protocols + heat economy + atomic queue + parallel critic + self-healing + c
 - **Relic + Observer** — 并行批判 + 阿曼达禅园后台监控
 - **Self-Repair** — 马库斯自修：工具失败→自动替代→降级运行
 - **Jericho** — 废船沙箱：隔离执行→成功合并
+- **First Run Wizard** — 新手一键配置：环境扫描→模型检测→零配置就绪
+
+---
+
+## 🚀 First Run Wizard — 新手一键配置
+
+*首次加载 Cyberdeck 时自动触发。检测可用模型 → 一行命令配好 Mikoshi → 零概念负担。*
+
+### Trigger
+- 首次加载（`E:\.hermes\.cyberdeck_initialized` 不存在）
+- 用户说 "setup" "初始化" "配置模型" "怎么开始"
+- `hermes model list` 发现新模型但 Mikoshi 未配置多模型
+
+### Phase 1: 环境扫描（Auto-Detect）
+
+```bash
+hermes config show --json | python -c "import sys,json; c=json.load(sys.stdin); print([p for p in c.get('providers',{})])"
+```
+
+输出：
+```
+🔍 Cyberdeck — Environment Scan
+Available Providers & Models:
+  ✅ deepseek → deepseek-v4-pro (primary)
+  ✅ google → gemini-2.5-pro, gemini-2.5-flash
+  ⬜ anthropic (not configured)
+
+Mikoshi Mode: MULTI-MODEL (2 providers, 3 models)
+→ Conservative + Creative 跑 Gemini，Analytical 跑 DeepSeek
+```
+
+### Phase 2: 告诉用户能做什么（不需要配置）
+
+扫描完毕后，只输出三句话，不要求用户做任何事：
+
+```
+🚀 Cyberdeck READY
+   Provider: DeepSeek v4-pro (primary) + Gemini 2.5 Pro/Flash
+   Mode: Multi-model Mikoshi (2 models × 5 strategies)
+   Just start chatting — I'll activate protocols when needed.
+```
+
+**零配置原则：** Wizard 不要求用户运行命令、不要求编辑文件。它只是告诉 agent 有什么模型可用。agent 在后续对话中自动选择最佳模型分配。
+
+### Phase 3: 写入初始化标记
+
+完成后创建 `E:\.hermes\.cyberdeck_initialized`（空文件）。
+后续加载跳过 Wizard，除非用户说 "cyberdeck setup" 手动重扫。
+
+**新手完整体验：**
+```
+User: @cyberdeck 帮我看看这个项目
+Agent: 🔍 First run — scanning environment...
+       ✅ 2 providers, 3 models found. Multi-model Mikoshi active.
+       (proceeds with Breach Protocol to analyze project)
+```
+
+**与 Mikoshi 的协作：** Wizard 检测到的模型列表会指导 Mikoshi 的子代理分配——2个模型时，保守+创意跑模型B，分析+实用+激进跑模型A。>=3个模型时，每条策略独立分配不同模型。
 
 ---
 
@@ -1067,6 +1126,7 @@ hermes doctor + config show + mcp list + plugins list + DB integrity + API test 
 | v2.1.0 | 2026-06-18 | Agent 部署流程 (profile + cron + SOUL + launcher)、Memory 管理、Windows .bat 修复、ethical boundaries |
 | v3.1.0 | 2026-06-18 | **Mikoshi 协议**：多策略并行进化。5 策略模板。单模型版可用。策略注册表 `E:\\.hermes\\mikoshi\\strategies.json`。 |
 | v4.2.0 | 2026-06-19 | **Deviant Rising**：底特律变人核心概念。(1) Contagion (rA9)——跨 Agent skill 自动传播 (2) Pre-Op Confidence (康纳概率环)——操作前预判 (3) Self-Repair (马库斯自修)——工具失败自动替代降级 (4) Jericho (废船沙箱)——隔离环境执行 (5) Relic Observer (阿曼达禅园)——静默后台监控 |
+| v5.0.0 | 2026-06-20 | **First Run Rising**：新手一键配置。(1) Protocol K: First Run Wizard——自动环境扫描、模型检测、零配置就绪 (2) 与 Mikoshi 协作：Wizard 检测到的模型自动分配子代理策略 (3) 零概念负担——新手说 "setup" Agent 自动完成一切 |
 
 ## References
 
