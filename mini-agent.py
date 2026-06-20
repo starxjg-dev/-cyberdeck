@@ -22,6 +22,10 @@ How it works:
 
 import subprocess, json, sys, os, re
 
+# Fix Windows GBK encoding for emoji output
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # ── Config ──────────────────────────────────────────────────
 MODEL = os.environ.get("CYBERDECK_MODEL", "qwen2.5:7b")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
