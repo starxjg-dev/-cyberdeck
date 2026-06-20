@@ -85,14 +85,19 @@ def file_search(pattern):
     return '\n'.join(results[:30]) + (f"\n... and {len(results)-30} more" if len(results) > 30 else "")
 
 # Commands that are never allowed (prevent model from running destructive ops)
-DENY_LIST = ["rm -rf", "del /F", "rd /S", "format ", "shutdown", "mkfs", "dd if=", ":(){ :|:& };:"]
+# Each entry is matched as a whole word/phrase at command start or after separators
+DENY_PATTERNS = [
+    r'\brm\s+-r', r'\brm\s+-f', r'\brmdir', r'\bdel\s+/[Ff]', r'\brd\s+/[Ss]',
+    r'\bformat\s', r'\bshutdown\s', r'\bmkfs\s', r'\bdd\s+if=',
+    r'>\s*/dev/', r'\bchmod\s+777', r'\bwget\s.*\|\s*sh', r'\bcurl\s.*\|\s*sh',
+]
 
 def terminal_cmd(command):
-    """Run a read-only shell command. Destructive commands are blocked."""
-    cmd_lower = command.lower()
-    for deny in DENY_LIST:
-        if deny.lower() in cmd_lower:
-            return f"ERROR: Blocked dangerous command (matched: '{deny}')"
+    """Run a shell command. Destructive commands are blocked via pattern matching."""
+    import re as _re
+    for pat in DENY_PATTERNS:
+        if _re.search(pat, command, _re.IGNORECASE):
+            return f"ERROR: Blocked dangerous command (matched: '{pat}')"
     try:
         result = subprocess.run(
             command, shell=True, capture_output=True,
@@ -110,7 +115,13 @@ def terminal_cmd(command):
         return f"ERROR: {e}"
 
 def web_fetch(url):
-    """Fetch a URL, return first 500 chars."""
+    """Fetch a URL, return first 500 chars. Blocks file:// and internal IPs."""
+    url_lower = url.strip().lower()
+    if url_lower.startswith(('file://', 'ftp://')):
+        return "ERROR: blocked protocol — only http:// and https:// allowed"
+    for internal in ['127.0.0.1', 'localhost', '169.254.', '10.', '192.168.', '172.16.', '172.17.', '172.18.', '172.19.', '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.', '172.28.', '172.29.', '172.30.', '172.31.']:
+        if internal in url_lower:
+            return f"ERROR: blocked internal address ({internal}...) — external URLs only"
     try:
         import urllib.request
         with urllib.request.urlopen(url, timeout=10) as resp:
@@ -154,21 +165,15 @@ def run_agent(task):
 
         response = call_ollama(history)
 
-        # Parse response
-        thought_match = re.search(r'THOUGHT:\s*(.+?)(?=\n\s*(?:ACTION|FINAL|$)|\Z)', response, re.DOTALL)
-        action_match = re.search(r'ACTION:\s*(\w+)\((.+)\)', response)
-        final_match = re.search(r'FINAL:\s*(.+)', response, re.DOTALL)
+        # Parse response (case-insensitive: THOUGHT/Thought/thought all work)
+        thought_match = re.search(r'(?:THOUGHT|Thought|thought):\s*(.+?)(?=\n\s*(?:ACTION|Action|action|FINAL|Final|final|$)|\Z)', response, re.DOTALL)
+        action_match = re.search(r'(?:ACTION|Action|action):\s*(\w+)\((.+)\)', response)
+        final_match = re.search(r'(?:FINAL|Final|final):\s*(.+)', response, re.DOTALL)
 
         if thought_match:
             print(f"  🤔 {thought_match.group(1).strip()[:200]}")
 
-        if final_match:
-            answer = final_match.group(1).strip()
-            print(f"\n{'='*50}")
-            print(f"  💬 {answer}")
-            print(f"{'='*50}")
-            return answer
-
+        # Execute ACTION first if present (models may output ACTION + FINAL in same step)
         if action_match:
             tool = action_match.group(1).strip()
             arg = action_match.group(2).strip()
@@ -193,6 +198,23 @@ def run_agent(task):
             preview = result[:300].replace('\n', '\n  ')
             print(f"  👀 {preview}{'...' if len(result) > 300 else ''}")
             history += f"\nACTION: {tool}({arg})\nRESULT: {result}\n"
+
+            # After executing ACTION, check if model also declared FINAL in same step
+            if final_match:
+                answer = final_match.group(1).strip()
+                print(f"\n{'='*50}")
+                print(f"  💬 {answer}")
+                print(f"{'='*50}")
+                return answer
+
+        elif final_match:
+            # FINAL without ACTION — answer is ready
+            answer = final_match.group(1).strip()
+            print(f"\n{'='*50}")
+            print(f"  💬 {answer}")
+            print(f"{'='*50}")
+            return answer
+
         else:
             # No action found — feed the raw response back
             history += f"\nASSISTANT: {response}\n"

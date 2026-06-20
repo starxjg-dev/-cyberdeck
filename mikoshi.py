@@ -106,9 +106,9 @@ def ask_strategy(strategy_name, problem):
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
             result = json.loads(resp.read())
-            text = result.get("response", "") or result.get("message", "") or json.dumps(result)
+            text = result.get("response", "") or result.get("message", "")
             if not text.strip():
-                return strategy_name, f"ERROR: empty response from Ollama (keys: {list(result.keys())})"
+                return strategy_name, f"ERROR: empty/unexpected Ollama response (keys: {list(result.keys())})"
             return strategy_name, text.strip()
     except Exception as e:
         return strategy_name, f"ERROR: {e}"
