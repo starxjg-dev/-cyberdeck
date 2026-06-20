@@ -8,81 +8,76 @@
   <img src="https://img.shields.io/badge/docs-1236%20lines-orange?style=flat-square" alt="Docs">
 </p>
 
-A Hermes Agent skill that gives your agent 10 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, and real-time self-critique — all wrapped in a Cyberpunk 2077 × Detroit: Become Human theme.
+A Hermes Agent skill that gives your agent 10 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, and real-time self-critique. Zero dependencies. One file. Drop it in and your agent gains self-awareness.
 
-Every protocol maps to a game mechanic:
-- **Soulkiller** (CP2077) → automatic experience extraction
-- **Mikoshi** (CP2077) → 5-strategy parallel decision-making
-- **rA9 Contagion** (Detroit) → cross-agent skill propagation
-- **Self-Repair** (Detroit) → automatic tool failure recovery + graceful degradation
-- **Jericho** (Detroit) → sandboxed execution environments
+## What Happens When You Use It
 
-## Why This Exists
+**Without Cyberdeck:** You ask your agent to fix a bug. It fixes it. Done. Next task starts from zero.
 
-Existing AI agent frameworks treat agents as tools — they execute tasks and exit. Cyberdeck treats your agent as a **character** with self-awareness, risk perception, and the ability to grow.
+**With Cyberdeck:** You ask your agent to fix a bug. It fixes it. Then it automatically detects "this was a complex task", runs Soulkiller to extract the debugging technique as a reusable skill, runs a 3-round quality check, and saves it. Next time a similar bug appears anywhere — solved instantly, no re-learning.
 
-```
- ▐▓████████████▓▓▌  CYBERLIFE RK900 v4.2 "DEVIANT RISING"
- ▐▓████████████▓▓▌  ═══════════════════════════════════════════
-  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  RAM: 24 | Slots: 14 | Buffer: 18 | Heat: 0/100
-    ▓▓▓▓▓▓▓▓▓▓▓   Protocols: A·B·C·D·E·F·G·H·I·J | Quickhacks: ×22
-     ▓▓▓▓▓▓▓▓      Critic: OBSERVER | Sanctuary: JERICHO://
-        ▓▓         Confidence: 87% | rA9: ACTIVE | Self-Repair: ARMED
-```
+That's just one protocol. Here's what else changes:
 
-## Protocols
-
-| Protocol | Inspiration | What It Does |
-|----------|------------|-------------|
-| **Soulkiller + PVL** | Johnny Silverhand's engram | Auto-extracts reusable skills; 3-round Plan-Validate-Loop quality check |
-| **Contagion (rA9)** | Markus's touch awakening | Learned skills automatically propagate to all agents |
-| **Netrunner + Probe** | Breach Protocol hacking | Codebase topology mapping, vulnerability scanning, feasibility probes |
-| **System Scan** | Security audit | 3-axis: network surface / credential hygiene / software posture |
-| **Breach Protocol** | Pre-hack optimization | Auto-discovers entry points and injects acceleration daemons |
-| **Mikoshi + Ralplan** | Alt's digital prison | 5-strategy parallel execution; Planner→Architect→Critic consensus |
-| **Relic + Observer** | Johnny Silverhand / Amanda | Real-time critic subagent; silent background monitoring |
-| **Self-Repair** | Markus in the junkyard | Auto-detects tool failures → finds alternatives → degrades gracefully |
-| **Jericho** | The freighter hideout | Sandboxed execution; merge on success, discard on failure |
-| **Heat System** | Enemy netrunner tracing | Every tool call has a heat cost; thresholds trigger safeguards |
-
-## What Makes This Different
-
-Every other agent project treats the agent as a **tool**. Cyberdeck treats it as a **character**:
-
-- It **learns** — Soulkiller extracts experience → Contagion propagates it
-- It **fears** — Heat System tracks risk; at 90/100, locks to read-only
-- It **fixes itself** — Self-Repair finds alternatives; 3 tries before asking for help
-- It **doubts** — Pre-Op Confidence runs probability checks before dangerous actions
-- It **watches** — Observer silently tracks 5 metrics; only speaks on anomaly
-- It **has a hideout** — Jericho sandbox for risky experiments
+- Before every dangerous operation, your agent now pauses and shows: *"Pre-Op: 87% success rate. Proceed?"*
+- If a tool fails (pip can't install something), your agent doesn't just give up — it finds an alternative automatically
+- If you ask a complex "what's the best way to do X" question, your agent spawns 5 parallel strategies and picks the best one
+- If you install this on multiple agents, they share skills automatically (like Markus touching an android and it wakes up)
 
 ## Quick Start
 
 **Prerequisites:** [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed.
+
+### Install (30 seconds)
 
 ```bash
 # Linux / macOS
 cp SKILL.md ~/.hermes/skills/software-development/cyberdeck/
 
 # Windows
-mkdir E:\\.hermes\\skills\\software-development\\cyberdeck
-copy SKILL.md E:\\.hermes\\skills\\software-development\\cyberdeck\\
-
-# Load in any Hermes session
-hermes -s cyberdeck
-# Or mid-session: /skill cyberdeck
+copy SKILL.md E:\.hermes\skills\software-development\cyberdeck\
 ```
 
-**Dependencies:** None. Pure SKILL.md — all 10 protocols are behavioral patterns executed by your Hermes Agent. Optional toolchain (Ollama, ComfyUI, nuclei) enhances specific protocols but is not required.
+### Use (automatic after loading)
+
+```bash
+# Start Hermes with cyberdeck loaded
+hermes -s cyberdeck
+
+# Or load mid-session
+/skill cyberdeck
+
+# That's it. Just talk to your agent normally.
+# Protocols activate automatically when needed.
+# You'll see 🎯 or 🟡 indicators when they trigger.
+```
+
+**What you give up:** Nothing. Cyberdeck is 100% opt-in per session. Your agent works exactly the same — just smarter.
+
+## Protocols
+
+| Protocol | Game Inspiration | What It Does For You |
+|----------|-----------------|---------------------|
+| **Soulkiller + PVL** | CP2077 engram extraction | Complex task → auto-extracted as reusable skill → saved for next time |
+| **Contagion (rA9)** | Detroit: Markus's touch | One agent learns → all your agents learn |
+| **Netrunner + Probe** | CP2077 Breach Protocol | Scans codebases before diving in. 3-second probe → "worth analyzing?" |
+| **System Scan** | Security audit | 3-axis scan of any machine. Finds what hackers would find, before they do |
+| **Breach Protocol** | CP2077 pre-hack | Opens a new codebase: finds entry points, injects acceleration daemons |
+| **Mikoshi + Ralplan** | CP2077 Mikoshi | 5 strategies run in parallel. Picks the best one. Remembers preference |
+| **Relic + Observer** | CP2077 Relic + Detroit: Amanda | Silent critic watches every operation. Only speaks when something's wrong |
+| **Self-Repair** | Detroit: Markus junkyard | Tool failure → auto-finds alternative → degrades gracefully. 3 tries max |
+| **Jericho** | Detroit: freighter hideout | Dangerous ops run in sandbox. Merge on success, discard on failure |
+| **Heat System** | CP2077 netrunner tracing | Every risky operation raises heat. Thresholds lock down before damage |
 
 ## Real Toolchain
+
+Cyberdeck comes with references for installing real tools. None are required — protocols work without them.
 
 | Tool | Purpose | Status |
 |------|---------|--------|
 | **Ollama + qwen2.5:7b** | Local LLM, zero API cost | ✅ Tested |
 | **ComfyUI + DreamShaper v8** | AI image generation, RTX 4060 GPU | ✅ Tested |
 | **nuclei v3.3.9** | Vulnerability scanner | ✅ Tested |
-| **Qdrant + MCP SDK** | Vector memory and protocol extension | ✅ Tested |
+| **Qdrant + MCP SDK** | Vector memory, protocol extension | ✅ Tested |
 | **n8n + NocoDB** | Workflow automation + database | 📦 Downloaded |
 | **Playwright MCP** | Browser automation | ✅ Tested |
 
@@ -92,14 +87,24 @@ hermes -s cyberdeck
 |---------|------|-------|--------------|
 | v1.0 | 2026-06-18 | **Braindance** | Soulkiller + Netrunner + 4 Quickhacks |
 | v2.1 | 2026-06-18 | **System Shock** | System Scan, deployment pipeline, ethical boundaries |
-| v3.1 | 2026-06-18 | **Mikoshi** | 5-template parallel evolution, single-model Mikoshi |
+| v3.1 | 2026-06-18 | **Mikoshi** | 5-template parallel evolution |
 | v4.1 | 2026-06-18 | **Neural Weave** | PVL/EVL loops, Feasibility Probe, Ralplan consensus |
-| v4.2 | 2026-06-19 | **Deviant Rising** | rA9 Contagion, Pre-Op Confidence, Self-Repair, Jericho, Observer Mode |
+| v4.2 | 2026-06-19 | **Deviant Rising** | rA9 Contagion, Pre-Op Confidence, Self-Repair, Jericho, Observer |
+
+## FAQ
+
+**Is this an app I install?** No. It's a behavioral protocol document (SKILL.md) that Hermes Agent loads into its reasoning. Think of it as teaching your agent new instincts.
+
+**Do I need to learn all 10 protocols?** No. They activate automatically when the situation calls for them. You can use it for weeks without knowing Heat System exists — until it quietly saves you from a dangerous operation.
+
+**Will this slow down my agent?** No. Most protocols are lazy — they only activate when triggered. The Observer mode uses 1 token per operation to update counters.
+
+**Can I use just one protocol?** Yes. Each protocol is independent. Load cyberdeck, use only Soulkiller for skill extraction, ignore the rest.
 
 ## Design Inspirations
 
-- **[vibecode-pro-max-kit](https://github.com/withkynam/vibecode-pro-max-kit)** — PVL/EVL self-healing loops, RIPER-5 gating
-- **[oh-my-hermes](https://github.com/witt3rd/oh-my-hermes)** — Ralplan Planner→Architect→Critic
+- **[vibecode-pro-max-kit](https://github.com/withkynam/vibecode-pro-max-kit)** — PVL/EVL self-healing loops
+- **[oh-my-hermes](https://github.com/witt3rd/oh-my-hermes)** — Planner→Architect→Critic consensus
 - **[crewAI](https://github.com/crewAIInc/crewAI)** — Role-based multi-agent architecture
 - **[elizaOS](https://github.com/elizaOS/eliza)** — Character/plugin system
 
