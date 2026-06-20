@@ -133,7 +133,7 @@ def run_agent(task):
 
         # Parse response
         thought_match = re.search(r'THOUGHT:\s*(.+?)(?=\n\s*(?:ACTION|FINAL|$)|\Z)', response, re.DOTALL)
-        action_match = re.search(r'ACTION:\s*(\w+)\((.+?)\)', response)
+        action_match = re.search(r'ACTION:\s*(\w+)\((.+)\)', response)
         final_match = re.search(r'FINAL:\s*(.+)', response, re.DOTALL)
 
         if thought_match:
@@ -148,7 +148,11 @@ def run_agent(task):
 
         if action_match:
             tool = action_match.group(1).strip()
-            arg = action_match.group(2).strip().strip('"\'')
+            arg = action_match.group(2).strip()
+            # Only strip matching quote pairs, not internal quotes
+            if (arg.startswith('"') and arg.endswith('"')) or \
+               (arg.startswith("'") and arg.endswith("'")):
+                arg = arg[1:-1]
             print(f"  🔧 {tool}({arg[:80]})")
 
             # Execute tool

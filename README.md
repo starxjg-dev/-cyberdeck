@@ -164,7 +164,7 @@ When you start `hermes -s cyberdeck` for the first time, the wizard automaticall
    Just start chatting — protocols activate when needed.
 ```
 
-**To add a new model:** Set its API key in `E:\.hermes\.env` (see [.env.example](.env.example)), add the provider to `config.yaml`, then say "cyberdeck setup" to re-scan.
+**To add a new model:** Set its API key in `~/.hermes/.env` (Linux/Mac) or `E:\.hermes\.env` (Windows). See [.env.example](.env.example) for the format. Add the provider to `config.yaml`, then say "cyberdeck setup" to re-scan.
 
 **Stuck?** Open an [Issue](https://github.com/starxjg-dev/cyberdeck/issues) with your provider name and any error output.
 
@@ -181,7 +181,7 @@ When you start `hermes -s cyberdeck` for the first time, the wizard automaticall
 
 ## FAQ
 
-**Is this an app I install?** No. It's a behavioral protocol document (SKILL.md) that Hermes Agent loads into its reasoning. Think of it as teaching your agent new instincts.
+**Is this an app I install?** It's both. You can run `mikoshi.py` and `mini-agent.py` directly — they're standalone Python programs. For full 11-protocol Cyberdeck, you copy SKILL.md into Hermes Agent (one command). Think of it as: the demos are the trailer, the skill is the movie.
 
 **Do I need to learn all 11 protocols?** No. They activate automatically when the situation calls for them. You can use it for weeks without knowing Heat System exists — until it quietly saves you from a dangerous operation.
 

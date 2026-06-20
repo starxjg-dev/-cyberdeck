@@ -113,6 +113,7 @@ def score_response(response, strategy_name):
     """
     Score a response on 5 dimensions (0-100 each).
     This is a heuristic scorer — in production, you'd use a judge LLM.
+    strategy_name is reserved for future per-strategy scoring adjustments.
     """
     scores = {}
     text = response.lower()
@@ -179,12 +180,13 @@ def print_strategy_result(name, response, scores):
     print(f"  {s['emoji']} {s['label']} Strategy  ·  Score: {scores['total']}/100")
     print(f"  {'─'*56}")
 
-    # First 5 lines of response
-    lines = response.split('\n')[:8]
-    for line in lines:
+    # Show first 8 lines of response
+    lines = response.split('\n')
+    display_lines = lines[:8]
+    for line in display_lines:
         print(f"  │ {line[:90]}")
-    if len(response.split('\n')) > 8:
-        print(f"  │ ... ({len(response.split(chr(10)))} lines total)")
+    if len(lines) > 8:
+        print(f"  │ ... ({len(lines)} lines total)")
 
     # Score breakdown
     print(f"  │")

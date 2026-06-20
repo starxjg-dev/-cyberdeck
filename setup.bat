@@ -72,6 +72,6 @@ echo   Next steps:
 echo     1. hermes -s cyberdeck        (load with skill)
 echo     2. Just start chatting!       (Wizard auto-runs)
 echo.
-echo   Try the demo:  python mini-agent.py "Hello!"
+echo   Try the demo:  python mikoshi.py "your question here"
 echo.
 pause
