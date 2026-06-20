@@ -1,14 +1,14 @@
 # Cyberdeck — A Self-Evolving AI Agent Operating System
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.2.0-red?style=flat-square" alt="Version">
-  <img src="https://img.shields.io/badge/protocols-10-blue?style=flat-square" alt="Protocols">
+  <img src="https://img.shields.io/badge/version-5.0.0-red?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/protocols-11-blue?style=flat-square" alt="Protocols">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/inspiration-Cyberpunk%202077%20%2B%20Detroit%3A%20Become%20Human-purple?style=flat-square" alt="Inspiration">
-  <img src="https://img.shields.io/badge/docs-1236%20lines-orange?style=flat-square" alt="Docs">
+  <img src="https://img.shields.io/badge/docs-1296%20lines-orange?style=flat-square" alt="Docs">
 </p>
 
-A Hermes Agent skill that gives your agent 10 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, and real-time self-critique. Zero dependencies. One file. Drop it in and your agent gains self-awareness.
+A Hermes Agent skill that gives your agent 11 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, one-command setup, and real-time self-critique. Zero dependencies. One file. Drop it in and your agent gains self-awareness.
 
 ## What Happens When You Use It
 
@@ -30,12 +30,20 @@ That's just one protocol. Here's what else changes:
 ### Install (30 seconds)
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/starxjg-dev/cyberdeck.git
+
+# 2. Copy the skill file
 # Linux / macOS
-cp SKILL.md ~/.hermes/skills/software-development/cyberdeck/
+mkdir -p ~/.hermes/skills/software-development/cyberdeck/
+cp cyberdeck/SKILL.md ~/.hermes/skills/software-development/cyberdeck/
 
 # Windows
-copy SKILL.md E:\.hermes\skills\software-development\cyberdeck\
+mkdir E:\\.hermes\\skills\\software-development\\cyberdeck\\
+copy cyberdeck\\SKILL.md E:\\.hermes\\skills\\software-development\\cyberdeck\\
 ```
+
+**First time?** The [First Run Wizard](#-first-run-wizard-auto) scans your environment, detects available models, and shows what's ready. Zero manual config.
 
 ### Use (automatic after loading)
 
@@ -66,6 +74,7 @@ hermes -s cyberdeck
 | **Relic + Observer** | CP2077 Relic + Detroit: Amanda | Silent critic watches every operation. Only speaks when something's wrong |
 | **Self-Repair** | Detroit: Markus junkyard | Tool failure → auto-finds alternative → degrades gracefully. 3 tries max |
 | **Jericho** | Detroit: freighter hideout | Dangerous ops run in sandbox. Merge on success, discard on failure |
+| **First Run Wizard** | Auto-detect + setup | First load: scans models, configures Mikoshi, zero user action |
 | **Heat System** | CP2077 netrunner tracing | Every risky operation raises heat. Thresholds lock down before damage |
 
 ## Real Toolchain
@@ -95,80 +104,32 @@ With multiple LLM providers configured, Mikoshi transforms from "same brain, 5 p
 
 *Currently running: DeepSeek v4-pro (primary) + Gemini 2.5 Pro/Flash (multi-model).
 
-### 配置模型（新手 5 分钟接你自己的模型）
+## 🚀 First Run Wizard (Auto)
 
-**改两个文件。**
+*No manual config needed. The wizard handles everything on first load.*
 
-#### 1. `.env` — 填 API Key
+When you start `hermes -s cyberdeck` for the first time, the wizard automatically:
 
-复制 `.env.example` 为 `.env`，填上你要用的 provider 的 key：
+1. Scans your `config.yaml` for available providers and models
+2. Detects which API keys are set (checks `.env`)
+3. Shows what's ready and selects the best Mikoshi strategy
+4. Creates an init marker so it skips on future loads
 
-```bash
-# 选一个填
-DEEPSEEK_API_KEY=sk-xxx        # DeepSeek
-OPENAI_API_KEY=sk-xxx          # OpenAI / 第三方兼容
-GEMINI_API_KEY=xxx             # Gemini
-# Ollama 本地无需 key
+**Example output:**
+```
+🔍 Cyberdeck — Environment Scan
+  ✅ deepseek → deepseek-v4-pro (primary)
+  ✅ google → gemini-2.5-pro, gemini-2.5-flash
+  ⬜ anthropic (not configured)
+
+🚀 Cyberdeck READY
+   Mode: Multi-model Mikoshi (2 models × 5 strategies)
+   Just start chatting — protocols activate when needed.
 ```
 
-#### 2. `config.yaml` — 改模型名（~10 处）
+**To add a new model:** Set its API key in `E:\.hermes\.env` (see [.env.example](.env.example)), add the provider to `config.yaml`, then say "cyberdeck setup" to re-scan.
 
-找到你的 profile 配置：`~/.hermes/profiles/cyberdeck/config.yaml`
-
-**必须改的字段：**
-
-| 位置 | 字段 | 示例值 |
-|------|------|--------|
-| `model.default` | 主模型 | `gpt-4o` / `qwen2.5:7b` / `gemini-2.5-pro` |
-| `model.provider` | 主 provider | `openai` / `ollama` / `gemini` |
-| `auxiliary.approval` | 审批模型 | 同上 |
-| `auxiliary.compression` | 压缩模型 | 同上（flash 模型更省钱） |
-| `auxiliary.curator` | 管理模型 | 同上 |
-| `auxiliary.delegation` | 子代理模型 | 同上（建议用强模型） |
-| `auxiliary.kanban_decomposer` | 看板模型 | 同上 |
-| `auxiliary.skills_hub` | 技能模型 | 同上 |
-| `auxiliary.title_generation` | 标题模型 | 同上 |
-| `auxiliary.triage_specifier` | 分流模型 | 同上 |
-| `auxiliary.vision` | 视觉模型 | 同上 |
-| `auxiliary.web_extract` | 网页模型 | 同上 |
-
-**快速模板（找到对应段，整块替换）：**
-
-```yaml
-# --- OpenAI ---
-model:
-  default: gpt-4o
-  provider: openai
-auxiliary:
-  approval:      {api_key: '', base_url: '', extra_body: {}, model: gpt-4o-mini, provider: openai, timeout: 30}
-  compression:   {api_key: '', base_url: '', extra_body: {}, model: gpt-4o-mini, provider: openai, timeout: 120}
-  # ... 其余 auxiliary 全部改为 provider: openai, model: gpt-4o-mini
-
-# --- Ollama 本地（免费）---
-model:
-  default: qwen2.5:7b
-  provider: ollama
-# auxiliary 全部用 provider: ollama, model: qwen2.5:7b（或 gemma3:4b 省资源）
-
-# --- Gemini ---
-model:
-  default: gemini-2.5-pro
-  provider: gemini
-# auxiliary 全部用 provider: gemini, model: gemini-2.5-flash
-
-# --- DeepSeek（默认）---
-model:
-  default: deepseek-v4-pro
-  provider: deepseek
-# auxiliary 全部用 provider: deepseek, model: deepseek-v4-flash
-```
-
-3. 验证：
-```bash
-hermes --profile cyberdeck chat -q "你好，用中文回复"
-```
-
-搞不定？提 Issue，附上你的 provider 和报错信息。
+**Stuck?** Open an [Issue](https://github.com/starxjg-dev/cyberdeck/issues) with your provider name and any error output.
 
 ## Version History
 
@@ -179,12 +140,13 @@ hermes --profile cyberdeck chat -q "你好，用中文回复"
 | v3.1 | 2026-06-18 | **Mikoshi** | 5-template parallel evolution |
 | v4.1 | 2026-06-18 | **Neural Weave** | PVL/EVL loops, Feasibility Probe, Ralplan consensus |
 | v4.2 | 2026-06-19 | **Deviant Rising** | rA9 Contagion, Pre-Op Confidence, Self-Repair, Jericho, Observer |
+| v5.0 | 2026-06-20 | **First Run Rising** | Auto environment scan, zero-config model setup, wizard-triggered Mikoshi |
 
 ## FAQ
 
 **Is this an app I install?** No. It's a behavioral protocol document (SKILL.md) that Hermes Agent loads into its reasoning. Think of it as teaching your agent new instincts.
 
-**Do I need to learn all 10 protocols?** No. They activate automatically when the situation calls for them. You can use it for weeks without knowing Heat System exists — until it quietly saves you from a dangerous operation.
+**Do I need to learn all 11 protocols?** No. They activate automatically when the situation calls for them. You can use it for weeks without knowing Heat System exists — until it quietly saves you from a dangerous operation.
 
 **Will this slow down my agent?** No. Most protocols are lazy — they only activate when triggered. The Observer mode uses 1 token per operation to update counters.
 

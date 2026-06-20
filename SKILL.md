@@ -41,14 +41,15 @@ Eleven protocols + heat economy + atomic queue + parallel critic + self-healing 
 *首次加载 Cyberdeck 时自动触发。检测可用模型 → 一行命令配好 Mikoshi → 零概念负担。*
 
 ### Trigger
-- 首次加载（`E:\.hermes\.cyberdeck_initialized` 不存在）
+- 首次加载（检查 `~/.hermes/.cyberdeck_initialized` 或 `E:\.hermes\.cyberdeck_initialized` 是否存在——不存在 = 首次加载）
 - 用户说 "setup" "初始化" "配置模型" "怎么开始"
 - `hermes model list` 发现新模型但 Mikoshi 未配置多模型
 
 ### Phase 1: 环境扫描（Auto-Detect）
 
 ```bash
-hermes config show --json | python -c "import sys,json; c=json.load(sys.stdin); print([p for p in c.get('providers',{})])"
+# 方法：直接读 config.yaml 找 providers 段
+grep -A10 "^providers:" ~/.hermes/config.yaml 2>/dev/null || grep -A10 "^providers:" /e/.hermes/config.yaml 2>/dev/null
 ```
 
 输出：
@@ -78,7 +79,7 @@ Mikoshi Mode: MULTI-MODEL (2 providers, 3 models)
 
 ### Phase 3: 写入初始化标记
 
-完成后创建 `E:\.hermes\.cyberdeck_initialized`（空文件）。
+完成后创建 `~/.hermes/.cyberdeck_initialized`（Linux/Mac）或 `E:\.hermes\.cyberdeck_initialized`（Windows）空文件。
 后续加载跳过 Wizard，除非用户说 "cyberdeck setup" 手动重扫。
 
 **新手完整体验：**
