@@ -1,11 +1,11 @@
 # Cyberdeck — A Self-Evolving AI Agent Operating System
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-5.0.0-red?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-5.1.0-red?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/protocols-11-blue?style=flat-square" alt="Protocols">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/inspiration-Cyberpunk%202077%20%2B%20Detroit%3A%20Become%20Human-purple?style=flat-square" alt="Inspiration">
-  <img src="https://img.shields.io/badge/docs-1296%20lines-orange?style=flat-square" alt="Docs">
+  <img src="https://img.shields.io/badge/docs-1340%20lines-orange?style=flat-square" alt="Docs">
 </p>
 
 A Hermes Agent skill that gives your agent 11 protocols for self-evolution, multi-strategy decision-making, self-repair, sandbox isolation, one-command setup, and real-time self-critique.
@@ -112,6 +112,7 @@ hermes -s cyberdeck
 | **Self-Repair** | Detroit: Markus junkyard | Tool failure → auto-finds alternative → degrades gracefully. 3 tries max |
 | **Jericho** | Detroit: freighter hideout | Dangerous ops run in sandbox. Merge on success, discard on failure |
 | **First Run Wizard** | Auto-detect + setup | First load: scans models, configures Mikoshi, zero user action |
+| **Framework Tamer** | Breach Protocol plug-in | Detects frameworks (LangChain, soon FastAPI/Django). Auto-switches scanning strategy |
 | **Heat System** | CP2077 netrunner tracing | Every risky operation raises heat. Thresholds lock down before damage |
 
 ## Real Toolchain
@@ -178,6 +179,7 @@ When you start `hermes -s cyberdeck` for the first time, the wizard automaticall
 | v4.1 | 2026-06-18 | **Neural Weave** | PVL/EVL loops, Feasibility Probe, Ralplan consensus |
 | v4.2 | 2026-06-19 | **Deviant Rising** | rA9 Contagion, Pre-Op Confidence, Self-Repair, Jericho, Observer |
 | v5.0 | 2026-06-20 | **First Run Rising** | Auto environment scan, zero-config model setup, wizard-triggered Mikoshi |
+| v5.1 | 2026-06-20 | **Framework Tamer** | LangChain auto-recognition — Chain/Agent/Tool/Memory/RAG 6-dim scan |
 
 ## FAQ
 

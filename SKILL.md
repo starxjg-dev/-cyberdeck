@@ -1,7 +1,7 @@
 ---
 name: cyberdeck
 description: "Use when the agent needs to self-improve through experience extraction (Soulkiller), systematically penetrate/explore/audit a codebase or system (Netrunner), discover optimal codebase entry points (Breach Protocol), deploy tiered attack/defense operations (Quickhack Library), run real-time quality oversight (Relic), or auto-configure for new users (First Run Wizard). Cyberpunk 2077-inspired multi-protocol cyberdeck with heat/trace economy, atomic queue system, and parallel critic. Eleven protocols: Soulkiller, Netrunner, System Scan, Breach Protocol, Mikoshi, Relic, Contagion, Self-Repair, Jericho, First Run Wizard, Braindance (legacy)."
-version: 5.0.0
+version: 5.1.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -17,7 +17,7 @@ metadata:
  ▐▓████████████▓▓▌  CYBERLIFE RK900 v5.0 "FIRST RUN RISING"
  ▐▓████████████▓▓▌  ═══════════════════════════════════════════
   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  RAM: 24 | Slots: 14 | Buffer: 18 | Heat: 0/100
-    ▓▓▓▓▓▓▓▓▓▓▓   Protocols: A·B·C·D·E·F·G·H·I·J·K | Quickhacks: ×22
+    ▓▓▓▓▓▓▓▓▓▓▓   Protocols: A·B·C·D·E·F·G·H·I·J·K | Quickhacks: ×23
      ▓▓▓▓▓▓▓▓      Critic: OBSERVER | Sanctuary: JERICHO://
         ▓▓         Confidence: 87% | rA9: ACTIVE | Self-Repair: ARMED
 ```
@@ -517,6 +517,48 @@ search_files(pattern='setup\\.py|pyproject\\.toml|package\\.json', target='files
 | **Mass Vulnerability** | 扩大漏洞扫描范围——所有子代理共享同一个漏洞模式库 | 统一模式库 |
 | **Turret Tamer** | 控制"防御系统"——先找到测试文件，确保改动不破坏测试 | 预定位 `tests/` 目录 |
 | **Datamine** | 提取关键数据流——自动追踪数据从入口到出口的路径 | 追踪函数调用链 |
+| **Framework Tamer** | 识别项目使用的框架，自动加载框架专属模式 | 见下方框架插件 |
+
+### Framework Plugins — 框架专属识别模式
+
+*Breach Protocol 的 Phase 1 增强：检测到特定框架时，自动切换识别策略。*
+
+#### 🔗 LangChain
+
+**触发：** `search_files(pattern='from langchain|import langchain', output_mode='files')` 返回 ≥ 1 个文件。
+
+**接入点识别（LangChain 专属）：**
+
+```
+Chain 入口:
+  search_files(pattern='LLMChain|ConversationChain|SequentialChain|RetrievalQA|AgentExecutor')
+  
+Agent 定义:
+  search_files(pattern='create_openai_functions_agent|create_react_agent|initialize_agent|AgentType')
+  
+Tool 注册:
+  search_files(pattern='@tool|StructuredTool\.from_function|Tool\(.*func=')
+  
+Memory 配置:
+  search_files(pattern='ConversationBufferMemory|ConversationSummaryMemory|VectorStoreRetrieverMemory')
+
+Prompt 模板:
+  search_files(pattern='PromptTemplate|ChatPromptTemplate|MessagesPlaceholder|SystemMessage')
+  
+RAG 管道:
+  search_files(pattern='vectorstore\.as_retriever|Chroma\.from_documents|FAISS\.from_documents|Pinecone')
+```
+
+**拓扑映射增强：**
+1. 画 Chain 依赖图：Prompt → LLM → OutputParser → Next Chain → ... → Final Output
+2. 识别 Agent 的工具集：哪些 Tool 注册了，参数签名是什么
+3. 追踪 Memory 类型：短期（Buffer）还是长期（VectorStore）
+
+**价值：** Agent 加载后，你面对一个 LangChain 项目时不再看到一串 import 地狱，而是看到：
+- 入口：`agent_executor.py` 的 `create_react_agent` 
+- 工具：3 个 Tool（search / calculator / database_query）
+- Memory：`ConversationBufferWindowMemory(k=5)` — 记住最近 5 轮
+- RAG 管道：`Chroma` + `text-embedding-3-small`
 
 ---
 
@@ -1075,8 +1117,25 @@ client = QdrantClient(path='E:/tools/qdrant_data')
 # 语义搜索已有草稿: client.search(collection_name='soulkiller', query_vector=...)
 "
 ```
-hermes doctor + config show + mcp list + plugins list + DB integrity + API test + skill spot-check
-并行执行，分两批。详见 references/agent-self-diagnostic.md
+
+### QH-14: LangChain 项目结构扫描（Breach Protocol）
+```
+# 检测：是否为 LangChain 项目
+search_files(pattern='from langchain|import langchain', output_mode='files')
+
+# 识别 Chain 类型
+search_files(pattern='LLMChain|ConversationChain|RetrievalQA|AgentExecutor')
+
+# 识别 Tool 定义
+search_files(pattern='@tool|StructuredTool|Tool\(.*func=')
+
+# 识别 Memory 配置
+search_files(pattern='ConversationBufferMemory|ConversationSummaryMemory')
+
+# 识别 RAG 管道
+search_files(pattern='vectorstore|Chroma|FAISS|Pinecone|as_retriever')
+
+# 输出：框架类型 → 入口 → 工具清单 → 记忆策略 → RAG 配置
 ```
 
 ---
@@ -1129,6 +1188,7 @@ hermes doctor + config show + mcp list + plugins list + DB integrity + API test 
 | v3.1.0 | 2026-06-18 | **Mikoshi 协议**：多策略并行进化。5 策略模板。单模型版可用。策略注册表 `E:\\.hermes\\mikoshi\\strategies.json`。 |
 | v4.2.0 | 2026-06-19 | **Deviant Rising**：底特律变人核心概念。(1) Contagion (rA9)——跨 Agent skill 自动传播 (2) Pre-Op Confidence (康纳概率环)——操作前预判 (3) Self-Repair (马库斯自修)——工具失败自动替代降级 (4) Jericho (废船沙箱)——隔离环境执行 (5) Relic Observer (阿曼达禅园)——静默后台监控 |
 | v5.0.0 | 2026-06-20 | **First Run Rising**：新手一键配置。(1) Protocol K: First Run Wizard——自动环境扫描、模型检测、零配置就绪 (2) 与 Mikoshi 协作：Wizard 检测到的模型自动分配子代理策略 (3) 零概念负担——新手说 "setup" Agent 自动完成一切 |
+| v5.1.0 | 2026-06-20 | **Framework Tamer**：Breach Protocol 增强。(1) Framework Tamer Daemon——自动检测项目框架 (2) LangChain 专属识别模式：Chain/Agent/Tool/Memory/RAG 六维扫描 (3) QH-14 LangChain 项目结构快扫 |
 
 ## References
 
