@@ -245,6 +245,132 @@ def test_process_safely_truncates_multibyte_stdout_and_stderr(tmp_path):
     assert result.metadata["truncated"] is True
 
 
+class ChunkStream:
+    def __init__(self, chunks):
+        self._chunks = iter(chunks)
+        self.read_sizes = []
+
+    def read(self, size=-1):
+        self.read_sizes.append(size)
+        return next(self._chunks, b"")
+
+
+class FakePopenProcess:
+    def __init__(self, stdout_chunks=(), stderr_chunks=(), return_code=0):
+        self.stdout = ChunkStream(stdout_chunks)
+        self.stderr = ChunkStream(stderr_chunks)
+        self.return_code = return_code
+        self.returncode = None
+        self.killed = False
+        self.wait_calls = []
+        self.communicate_called = False
+
+    def wait(self, timeout=None):
+        self.wait_calls.append(timeout)
+        self.returncode = self.return_code
+        return self.return_code
+
+    def kill(self):
+        self.killed = True
+
+    def communicate(self, *_args, **_kwargs):
+        self.communicate_called = True
+        raise AssertionError("bounded streaming must not call communicate")
+
+
+def test_default_process_path_streams_and_bounds_stdout_stderr_without_communicate(tmp_path):
+    process = FakePopenProcess(
+        stdout_chunks=[b"\xe7\x95", b"\x8c\xe7\x95\x8c", b"discarded"],
+        stderr_chunks=[b"\xf0\x9f", b"\x99\x82\xf0\x9f\x99\x82", b"discarded"],
+    )
+    captured = {}
+
+    def popen_factory(argv, **kwargs):
+        captured["argv"] = argv
+        captured.update(kwargs)
+        return process
+
+    registry = build_default_registry(
+        tmp_path,
+        popen_factory=popen_factory,
+        max_process_output_bytes=5,
+    )
+    result = registry.execute(
+        ToolRequest("1", "process.run", {"argv": ["git", "status"]}),
+        PolicyEngine(tmp_path),
+    )
+
+    assert result.success
+    assert result.output == "界"
+    assert result.metadata["stderr"] == "🙂"
+    assert result.metadata["truncated"] is True
+    assert process.stdout.read_sizes[-1] > 0
+    assert process.stderr.read_sizes[-1] > 0
+    assert process.communicate_called is False
+    assert captured["argv"] == ["git", "status"]
+    assert captured["shell"] is False
+    assert captured["cwd"] == tmp_path.resolve()
+    assert captured["stdout"] is subprocess.PIPE
+    assert captured["stderr"] is subprocess.PIPE
+
+
+def test_default_process_path_kills_and_reaps_on_timeout(tmp_path):
+    class TimeoutProcess(FakePopenProcess):
+        def wait(self, timeout=None):
+            self.wait_calls.append(timeout)
+            if not self.killed:
+                raise subprocess.TimeoutExpired(["git", "status"], timeout)
+            self.returncode = -9
+            return self.returncode
+
+    process = TimeoutProcess(stdout_chunks=[b"partial"], stderr_chunks=[b"warning"])
+    registry = build_default_registry(
+        tmp_path,
+        popen_factory=lambda *_args, **_kwargs: process,
+    )
+
+    result = registry.execute(
+        ToolRequest(
+            "1",
+            "process.run",
+            {"argv": ["git", "status"], "timeout": 0.01},
+        ),
+        PolicyEngine(tmp_path),
+    )
+
+    assert not result.success
+    assert result.error_category is ErrorCategory.TIMEOUT
+    assert process.killed is True
+    assert len(process.wait_calls) == 2
+    assert process.communicate_called is False
+    assert process.stdout.read_sizes
+    assert process.stderr.read_sizes
+
+
+def test_default_process_path_normalizes_stream_errors_and_reaps_process(tmp_path):
+    class ErrorStream:
+        def read(self, _size=-1):
+            raise OSError("token=stream-secret")
+
+    process = FakePopenProcess(stderr_chunks=[b"warning"])
+    process.stdout = ErrorStream()
+    registry = build_default_registry(
+        tmp_path,
+        popen_factory=lambda *_args, **_kwargs: process,
+    )
+
+    result = registry.execute(
+        ToolRequest("1", "process.run", {"argv": ["git", "status"]}),
+        PolicyEngine(tmp_path),
+    )
+
+    assert not result.success
+    assert result.error_category is ErrorCategory.TOOL
+    assert "stream-secret" not in result.error_message
+    assert process.wait_calls
+    assert process.communicate_called is False
+
+
 def test_private_addresses_are_rejected():
     def resolver(*_args, **_kwargs):
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]

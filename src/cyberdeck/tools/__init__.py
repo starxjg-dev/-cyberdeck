@@ -17,6 +17,7 @@ def build_default_registry(
     workspace: str | PathLike[str],
     *,
     runner: Callable[..., Any] | None = None,
+    popen_factory: Callable[..., Any] | None = None,
     opener: Callable[..., Any] | Any | None = None,
     resolver: Callable[..., Any] = socket.getaddrinfo,
     max_file_bytes: int = 64 * 1024,
@@ -34,6 +35,7 @@ def build_default_registry(
         ProcessHandler(
             workspace,
             runner=runner,
+            popen_factory=popen_factory,
             max_output_bytes=max_process_output_bytes,
         ),
     )
