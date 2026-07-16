@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyberdeck-agent"
+version = "6.0.0rc1"
+description = "An observable, evaluable, policy-gated multi-strategy code agent"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "starxjg-dev" }]
+dependencies = []
+
+[project.scripts]
+cyberdeck = "cyberdeck.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
