@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Mapping
+from typing import Any
 
 
 class ErrorCategory(str, Enum):
@@ -73,7 +74,7 @@ class ToolRequest:
             raise ValueError("tool request rationale must be text")
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> "ToolRequest":
+    def from_dict(cls, value: Mapping[str, Any]) -> ToolRequest:
         if not isinstance(value, Mapping):
             raise ValueError("tool request must be an object")
         return cls(
@@ -132,7 +133,7 @@ class ToolResult:
         )
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> "ToolResult":
+    def from_dict(cls, value: Mapping[str, Any]) -> ToolResult:
         if not isinstance(value, Mapping):
             raise ValueError("tool result must be an object")
         return cls(
@@ -182,7 +183,7 @@ class AgentStep:
             raise ValueError("agent step cannot contain both tool_request and final_answer")
 
     @classmethod
-    def from_model_text(cls, model_text: str) -> "AgentStep":
+    def from_model_text(cls, model_text: str) -> AgentStep:
         if not isinstance(model_text, str) or not model_text.strip():
             raise ValueError("model output must be valid JSON")
         text = model_text.strip()
@@ -251,7 +252,7 @@ class AgentRunResult:
         )
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> "AgentRunResult":
+    def from_dict(cls, value: Mapping[str, Any]) -> AgentRunResult:
         if not isinstance(value, Mapping):
             raise ValueError("agent result must be an object")
         return cls(

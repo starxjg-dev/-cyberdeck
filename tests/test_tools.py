@@ -156,9 +156,8 @@ def test_handler_exception_is_returned_as_typed_error_without_secret(tmp_path):
 
 
 def test_private_addresses_are_rejected():
-    resolver = lambda *_args, **_kwargs: [
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))
-    ]
+    def resolver(*_args, **_kwargs):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]
 
     assert not is_public_host("example.test", resolver=resolver)
 

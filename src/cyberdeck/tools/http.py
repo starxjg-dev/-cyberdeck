@@ -24,7 +24,7 @@ def _hostname_from_https_url(url: str) -> str:
     try:
         parsed = urlsplit(url)
         host = parsed.hostname
-        parsed.port
+        _ = parsed.port
     except ValueError as exc:
         raise UnsafeUrlError("URL is invalid") from exc
     if parsed.scheme.casefold() != "https":
@@ -141,7 +141,7 @@ class HttpGetHandler:
                 content_type = response.headers.get("Content-Type", "")
         except UnsafeUrlError as exc:
             return self._error(request, ErrorCategory.POLICY, str(exc), started)
-        except (TimeoutError, socket.timeout):
+        except TimeoutError:
             return self._error(request, ErrorCategory.TIMEOUT, "HTTP request timed out", started)
         except urllib.error.HTTPError as exc:
             return self._error(

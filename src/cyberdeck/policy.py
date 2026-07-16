@@ -227,7 +227,7 @@ class PolicyEngine:
         try:
             parsed = urlsplit(raw_url)
             hostname = parsed.hostname
-            parsed.port
+            _ = parsed.port
         except ValueError:
             return _decision(PolicyAction.DENY, "URL is invalid")
         if parsed.scheme.casefold() != "https":

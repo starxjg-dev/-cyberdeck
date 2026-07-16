@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import socket
 import time
 import urllib.error
 import urllib.request
@@ -78,7 +77,7 @@ class OllamaProvider:
                 retryable=500 <= exc.code < 600,
                 status_code=exc.code,
             ) from None
-        except (TimeoutError, socket.timeout):
+        except TimeoutError:
             raise ProviderError(
                 "Ollama request timed out; reduce the prompt or increase the timeout",
                 retryable=True,
@@ -177,7 +176,7 @@ class OllamaProvider:
             raise ValueError("Ollama base_url must be non-empty text")
         try:
             parsed = urlsplit(base_url)
-            parsed.port
+            _ = parsed.port
         except ValueError as exc:
             raise ValueError("Ollama base_url is invalid") from exc
         if parsed.scheme not in {"http", "https"} or not parsed.hostname:
