@@ -117,4 +117,3 @@ class ToolRegistry:
 
 
 __all__ = ["ApprovalCallback", "ToolHandler", "ToolRegistry"]
-
