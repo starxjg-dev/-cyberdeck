@@ -26,11 +26,15 @@ _SHELL_METACHARACTERS = re.compile(r"[|&;<>`\r\n\x00]")
 _HOST_LABEL = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 _UNSAFE_RG_OPTIONS = {"--pre", "--hostname-bin"}
 _UNSAFE_GIT_OPTIONS = {
+    "--git-dir",
     "--config-env",
     "--exec-path",
     "--ext-diff",
+    "--no-index",
     "--paginate",
     "--textconv",
+    "--work-tree",
+    "-C",
     "-c",
     "-p",
 }
@@ -169,6 +173,8 @@ class PolicyEngine:
             return _decision(PolicyAction.DENY, "rg process-execution options are not allowed")
         if executable == "git" and self._contains_option(argv[1:], _UNSAFE_GIT_OPTIONS):
             return _decision(PolicyAction.DENY, "git execution options are not allowed")
+        if executable in {"git", "rg"} and self._arguments_escape_workspace(argv[2:]):
+            return _decision(PolicyAction.DENY, "command arguments escape workspace")
         if readonly is None:
             return _decision(PolicyAction.ALLOW, "read-only command allowed")
         if len(argv) < 2:
@@ -200,6 +206,19 @@ class PolicyEngine:
         if any(argument in _MUTATING_BRANCH_OPTIONS for argument in arguments):
             return True
         return any(not argument.startswith("-") for argument in arguments)
+
+    def _arguments_escape_workspace(self, arguments: Sequence[str]) -> bool:
+        for argument in arguments:
+            if argument.startswith("-"):
+                continue
+            candidate = Path(argument)
+            if not candidate.is_absolute() and ".." not in candidate.parts:
+                continue
+            try:
+                self.resolve_path(argument)
+            except (OSError, ValueError):
+                return True
+        return False
 
     @staticmethod
     def _evaluate_url(raw_url: Any) -> PolicyDecision:

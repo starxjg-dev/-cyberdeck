@@ -45,8 +45,15 @@ def test_symlink_escape_is_denied(tmp_path):
     link = tmp_path / "escape"
     try:
         link.symlink_to(outside, target_is_directory=True)
-    except OSError as exc:
-        pytest.skip(f"symlinks unavailable: {exc}")
+    except OSError:
+        # Standard Windows users may lack symlink privileges. Linux CI exercises
+        # the real symlink branch; this fallback keeps the local confinement
+        # assertion deterministic without silently skipping the security suite.
+        decision = PolicyEngine(tmp_path).evaluate(
+            request("file.read", path=str(outside / "secret.txt"))
+        )
+        assert decision.action is PolicyAction.DENY
+        return
 
     decision = PolicyEngine(tmp_path).evaluate(request("file.read", path="escape/secret.txt"))
 
@@ -90,6 +97,32 @@ def test_git_branch_mutation_requires_approval(tmp_path):
 
     assert listing.action is PolicyAction.ALLOW
     assert creation.action is PolicyAction.REQUIRE_APPROVAL
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["rg", "needle", ".."],
+        ["rg", "needle", "../outside"],
+        ["git", "status", "-C", ".."],
+        ["git", "status", "--git-dir=../outside/.git"],
+        ["git", "status", "--work-tree", "../outside"],
+    ],
+)
+def test_allowlisted_commands_cannot_escape_workspace_through_arguments(tmp_path, argv):
+    decision = PolicyEngine(tmp_path).evaluate(request("process.run", argv=argv))
+
+    assert decision.action is PolicyAction.DENY
+
+
+def test_rg_rejects_absolute_path_outside_workspace(tmp_path):
+    outside = (tmp_path.parent / "outside" / "secret.txt").resolve()
+
+    decision = PolicyEngine(tmp_path).evaluate(
+        request("process.run", argv=["rg", "needle", str(outside)])
+    )
+
+    assert decision.action is PolicyAction.DENY
 
 
 def test_http_defaults_to_https_and_public_hosts(tmp_path):
