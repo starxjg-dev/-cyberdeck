@@ -71,7 +71,7 @@ class OllamaProvider:
         try:
             response_context = self._open(request)
             with response_context as response:
-                raw = response.read()
+                raw = response.read(self.max_response_bytes + 1)
         except urllib.error.HTTPError as exc:
             raise ProviderError(
                 f"Ollama returned HTTP status {exc.code}; verify the model is installed",

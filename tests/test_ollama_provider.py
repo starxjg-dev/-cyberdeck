@@ -24,8 +24,9 @@ class Response:
     def __exit__(self, *_args):
         return None
 
-    def read(self):
-        return json.dumps(self.payload).encode()
+    def read(self, size=-1):
+        encoded = json.dumps(self.payload).encode()
+        return encoded if size < 0 else encoded[:size]
 
 
 def test_ollama_normalizes_text_usage_and_latency():
@@ -69,6 +70,46 @@ def test_ollama_request_contains_endpoint_and_runtime_options():
     assert captured["headers"]["Content-type"] == "application/json"
 
 
+def test_ollama_bounds_response_read_to_configured_limit_plus_one():
+    read_sizes = []
+
+    class SizedResponse(Response):
+        def read(self, size=-1):
+            read_sizes.append(size)
+            return super().read(size)
+
+    provider = OllamaProvider(
+        opener=lambda *_args, **_kwargs: SizedResponse(),
+        max_response_bytes=256,
+    )
+
+    response = provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert response.text.endswith('"done"}')
+    assert read_sizes == [257]
+
+
+def test_ollama_rejects_oversized_response_before_json_parsing():
+    read_sizes = []
+
+    class OversizedResponse(Response):
+        def read(self, size=-1):
+            read_sizes.append(size)
+            return b"x" * size
+
+    provider = OllamaProvider(
+        opener=lambda *_args, **_kwargs: OversizedResponse(),
+        max_response_bytes=32,
+    )
+
+    with pytest.raises(ProviderError) as captured:
+        provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert captured.value.category is ErrorCategory.PROVIDER
+    assert captured.value.code == "response_too_large"
+    assert read_sizes == [33]
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [
@@ -86,8 +127,9 @@ def test_ollama_rejects_malformed_payloads(payload, message):
 
 def test_ollama_rejects_invalid_json():
     class InvalidResponse(Response):
-        def read(self):
-            return b"not json"
+        def read(self, size=-1):
+            body = b"not json"
+            return body if size < 0 else body[:size]
 
     provider = OllamaProvider(opener=lambda *_args, **_kwargs: InvalidResponse())
 
