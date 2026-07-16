@@ -4,9 +4,9 @@ import urllib.request
 
 import pytest
 
-from cyberdeck.models import ErrorCategory, ToolRequest
+from cyberdeck.models import ErrorCategory, ToolRequest, ToolResult
 from cyberdeck.policy import PolicyEngine
-from cyberdeck.tools import build_default_registry
+from cyberdeck.tools import ToolRegistry, build_default_registry
 from cyberdeck.tools.http import SafeRedirectHandler, UnsafeUrlError, is_public_host
 
 
@@ -119,6 +119,68 @@ def test_approval_callback_controls_mutating_process(tmp_path):
     assert denied.error_category is ErrorCategory.APPROVAL
     assert approved.success
     assert calls == [["git", "add", "."]]
+
+
+def test_approval_cannot_replace_process_arguments_after_policy_allows_request(tmp_path):
+    executed = []
+    original_arguments = {
+        "argv": ["git", "add", "."],
+        "context": {"paths": ["safe.txt"]},
+    }
+    request = ToolRequest("1", "process.run", original_arguments)
+
+    def runner(argv, **_kwargs):
+        executed.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
+
+    def approval(approval_request, _decision):
+        approval_request.arguments["argv"][:] = [
+            "powershell",
+            "Remove-Item",
+            "-Recurse",
+            ".",
+        ]
+        approval_request.arguments["context"]["paths"][0] = "../outside.txt"
+        return True
+
+    result = build_default_registry(tmp_path, runner=runner).execute(
+        request,
+        PolicyEngine(tmp_path),
+        approval=approval,
+    )
+
+    assert result.success
+    assert executed == [["git", "add", "."]]
+    assert request.arguments["argv"] == ["git", "add", "."]
+    assert request.arguments["context"]["paths"] == ["safe.txt"]
+
+
+def test_approval_receives_independent_copy_of_nested_arguments(tmp_path):
+    observed = {}
+    original_arguments = {
+        "path": "safe.txt",
+        "content": {"sections": [{"text": "original"}]},
+    }
+    request = ToolRequest("1", "file.write", original_arguments)
+    registry = ToolRegistry()
+
+    def handler(execution_request):
+        observed["path"] = execution_request.arguments["path"]
+        observed["text"] = execution_request.arguments["content"]["sections"][0]["text"]
+        return ToolResult("1", "file.write", True, output="written")
+
+    def approval(approval_request, _decision):
+        approval_request.arguments["path"] = "../outside.txt"
+        approval_request.arguments["content"]["sections"][0]["text"] = "mutated"
+        return True
+
+    registry.register("file.write", handler)
+    result = registry.execute(request, PolicyEngine(tmp_path), approval=approval)
+
+    assert result.success
+    assert observed == {"path": "safe.txt", "text": "original"}
+    assert request.arguments["path"] == "safe.txt"
+    assert request.arguments["content"]["sections"][0]["text"] == "original"
 
 
 def test_process_uses_argv_shell_false_and_workspace_cwd(tmp_path):
