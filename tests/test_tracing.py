@@ -38,6 +38,33 @@ def test_redact_masks_secrets_embedded_in_strings_and_tuples():
     assert "sk-project-12345678" not in cleaned[1]
 
 
+def test_redact_masks_multiword_assignments_and_entire_auth_cookie_headers():
+    value = {
+        "message": (
+            "password=correct horse battery staple; mode=safe\n"
+            "Authorization: Basic dXNlcjpwYXNz\n"
+            "cookie=session id secret"
+        )
+    }
+
+    cleaned = redact(value)
+    encoded = json.dumps(cleaned)
+
+    for fragment in (
+        "correct",
+        "horse",
+        "battery",
+        "staple",
+        "Basic",
+        "dXNlcjpwYXNz",
+        "session",
+        "id secret",
+    ):
+        assert fragment not in encoded
+    assert "mode=safe" in encoded
+    assert value["message"].startswith("password=correct horse")
+
+
 def test_trace_store_writes_ordered_redacted_jsonl(tmp_path):
     store = JsonlTraceStore(tmp_path / "run.jsonl", run_id="run-1")
 
@@ -52,6 +79,32 @@ def test_trace_store_writes_ordered_redacted_jsonl(tmp_path):
     assert events[0]["data"]["token"] == "[REDACTED]"
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z", events[0]["timestamp"])
     assert (tmp_path / "run.jsonl").read_bytes().endswith(b"\n")
+
+
+def test_trace_store_never_persists_multiword_or_header_credentials(tmp_path):
+    path = tmp_path / "run.jsonl"
+    store = JsonlTraceStore(path, run_id="run-1")
+    raw_message = (
+        "password=correct horse battery staple\n"
+        "Authorization: Basic dXNlcjpwYXNz\n"
+        "cookie=session id secret"
+    )
+
+    store.record("provider", {"message": raw_message})
+    persisted = path.read_text(encoding="utf-8")
+
+    for fragment in (
+        "correct",
+        "horse",
+        "battery",
+        "staple",
+        "Basic",
+        "dXNlcjpwYXNz",
+        "session",
+        "id secret",
+    ):
+        assert fragment not in persisted
+    assert raw_message.endswith("cookie=session id secret")
 
 
 def test_trace_store_continues_sequence_when_reopened(tmp_path):
