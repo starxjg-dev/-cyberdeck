@@ -1,4 +1,5 @@
 import json
+import socket
 import urllib.error
 
 import pytest
@@ -147,6 +148,30 @@ def test_ollama_url_error_has_stable_provider_category_without_secret():
     assert captured.value.code == "connection_error"
     assert captured.value.retryable is True
     assert "connection-secret" not in str(captured.value)
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        TimeoutError("token=wrapped-timeout-secret"),
+        socket.timeout("token=wrapped-socket-secret"),  # noqa: UP041 - explicit regression case
+    ],
+    ids=["timeout-error", "socket-timeout"],
+)
+def test_ollama_url_error_wrapping_timeout_preserves_timeout_category(reason):
+    def opener(*_args, **_kwargs):
+        raise urllib.error.URLError(reason)
+
+    provider = OllamaProvider(opener=opener)
+
+    with pytest.raises(ProviderError) as captured:
+        provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert captured.value.category is ErrorCategory.TIMEOUT
+    assert captured.value.code == "timeout"
+    assert captured.value.retryable is True
+    assert "wrapped-timeout-secret" not in str(captured.value)
+    assert "wrapped-socket-secret" not in str(captured.value)
 
 
 def test_ollama_transport_error_does_not_leak_exception_secret():

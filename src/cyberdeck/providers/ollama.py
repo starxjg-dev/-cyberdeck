@@ -86,7 +86,20 @@ class OllamaProvider:
                 code="timeout",
                 retryable=True,
             ) from None
-        except (OSError, urllib.error.URLError):
+        except urllib.error.URLError as exc:
+            if isinstance(exc.reason, TimeoutError):
+                raise ProviderError(
+                    "Ollama request timed out; reduce the prompt or increase the timeout",
+                    category=ErrorCategory.TIMEOUT,
+                    code="timeout",
+                    retryable=True,
+                ) from None
+            raise ProviderError(
+                "Could not reach Ollama; start the service with `ollama serve`",
+                code="connection_error",
+                retryable=True,
+            ) from None
+        except OSError:
             raise ProviderError(
                 "Could not reach Ollama; start the service with `ollama serve`",
                 code="connection_error",
