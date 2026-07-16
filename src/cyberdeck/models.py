@@ -104,16 +104,32 @@ class ToolResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "request_id", _required_text(self.request_id, "result requires request_id"))
-        object.__setattr__(self, "tool_name", _required_text(self.tool_name, "result requires tool_name"))
+        object.__setattr__(
+            self,
+            "request_id",
+            _required_text(self.request_id, "result requires request_id"),
+        )
+        object.__setattr__(
+            self,
+            "tool_name",
+            _required_text(self.tool_name, "result requires tool_name"),
+        )
         if not isinstance(self.success, bool):
             raise ValueError("result success must be boolean")
         if not isinstance(self.output, str) or not isinstance(self.error_message, str):
             raise ValueError("result output and error_message must be text")
         object.__setattr__(self, "error_category", _optional_category(self.error_category))
-        if not isinstance(self.duration_ms, int) or isinstance(self.duration_ms, bool) or self.duration_ms < 0:
+        if (
+            not isinstance(self.duration_ms, int)
+            or isinstance(self.duration_ms, bool)
+            or self.duration_ms < 0
+        ):
             raise ValueError("result duration_ms must be a non-negative integer")
-        object.__setattr__(self, "metadata", _mapping(self.metadata, "result metadata must be an object"))
+        object.__setattr__(
+            self,
+            "metadata",
+            _mapping(self.metadata, "result metadata must be an object"),
+        )
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> "ToolResult":
@@ -143,7 +159,10 @@ class ToolResult:
         }
 
 
-_FENCED_JSON = re.compile(r"^```(?:json)?[ \t]*\r?\n(?P<body>.*)\r?\n```$", re.DOTALL | re.IGNORECASE)
+_FENCED_JSON = re.compile(
+    r"^```(?:json)?[ \t]*\r?\n(?P<body>.*)\r?\n```$",
+    re.DOTALL | re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -181,7 +200,9 @@ class AgentStep:
         raw_tool_request = value.get("tool_request")
         if raw_tool_request is not None and not isinstance(raw_tool_request, Mapping):
             raise ValueError("tool_request must be an object")
-        tool_request = ToolRequest.from_dict(raw_tool_request) if raw_tool_request is not None else None
+        tool_request = (
+            ToolRequest.from_dict(raw_tool_request) if raw_tool_request is not None else None
+        )
         return cls(
             thought=value.get("thought", ""),
             tool_request=tool_request,
@@ -207,12 +228,20 @@ class AgentRunResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "run_id", _required_text(self.run_id, "agent result requires run_id"))
+        object.__setattr__(
+            self,
+            "run_id",
+            _required_text(self.run_id, "agent result requires run_id"),
+        )
         if not isinstance(self.success, bool):
             raise ValueError("agent result success must be boolean")
         if not isinstance(self.answer, str) or not isinstance(self.error_message, str):
             raise ValueError("agent result answer and error_message must be text")
-        if not isinstance(self.steps, int) or isinstance(self.steps, bool) or self.steps < 0:
+        if (
+            not isinstance(self.steps, int)
+            or isinstance(self.steps, bool)
+            or self.steps < 0
+        ):
             raise ValueError("agent result steps must be a non-negative integer")
         object.__setattr__(self, "error_category", _optional_category(self.error_category))
         object.__setattr__(
