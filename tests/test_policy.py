@@ -125,6 +125,49 @@ def test_rg_rejects_absolute_path_outside_workspace(tmp_path):
     assert decision.action is PolicyAction.DENY
 
 
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["git", "diff", "--output=../escaped.patch"],
+        ["git", "diff", "--output", "../escaped.patch"],
+        ["git", "diff", "--output=inside.patch"],
+        ["git", "grep", "--open-files-in-pager=powershell", "needle"],
+        ["git", "grep", "--open-files-in-pager", "powershell", "needle"],
+        ["rg", "--file=../outside.patterns", "needle", "."],
+        ["rg", "--file", "../outside.patterns", "needle", "."],
+        ["rg", "-f", "../outside.patterns", "needle", "."],
+        ["git", "status", "--unknown-option"],
+        ["rg", "--unknown-option", "needle", "."],
+    ],
+)
+def test_process_safe_grammar_rejects_side_effect_external_program_and_unknown_options(
+    tmp_path, argv
+):
+    decision = PolicyEngine(tmp_path).evaluate(request("process.run", argv=argv))
+
+    assert decision.action is PolicyAction.DENY
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["git", "status"],
+        ["git", "status", "--short", "--branch"],
+        ["git", "diff", "--", "README.md"],
+        ["git", "log", "--oneline", "-n", "5"],
+        ["git", "show", "--stat", "HEAD"],
+        ["git", "grep", "-n", "needle", "--", "src"],
+        ["git", "branch", "--list"],
+        ["rg", "-n", "--glob", "*.py", "needle", "."],
+        ["rg", "--file", "patterns.txt", "."],
+    ],
+)
+def test_process_safe_grammar_keeps_minimal_read_only_happy_paths(tmp_path, argv):
+    decision = PolicyEngine(tmp_path).evaluate(request("process.run", argv=argv))
+
+    assert decision.action is PolicyAction.ALLOW
+
+
 def test_http_defaults_to_https_and_public_hosts(tmp_path):
     engine = PolicyEngine(tmp_path)
 

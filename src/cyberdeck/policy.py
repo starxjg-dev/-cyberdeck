@@ -24,32 +24,181 @@ MUTATING_COMMANDS: dict[str, set[str]] = {
 
 _SHELL_METACHARACTERS = re.compile(r"[|&;<>`\r\n\x00]")
 _HOST_LABEL = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
-_UNSAFE_RG_OPTIONS = {"--pre", "--hostname-bin"}
-_UNSAFE_GIT_OPTIONS = {
-    "--git-dir",
-    "--config-env",
-    "--exec-path",
-    "--ext-diff",
-    "--no-index",
-    "--paginate",
-    "--textconv",
-    "--work-tree",
-    "-C",
-    "-c",
-    "-p",
+
+_TEXT_VALUE = ("text", None)
+_PATH_VALUE = ("path", None)
+_INTEGER_VALUE = ("integer", None)
+_COLOR_VALUE = ("choice", frozenset({"always", "auto", "never"}))
+
+_RG_FLAG_OPTIONS = frozenset(
+    {
+        "--count",
+        "--files",
+        "--files-with-matches",
+        "--fixed-strings",
+        "--heading",
+        "--hidden",
+        "--ignore-case",
+        "--invert-match",
+        "--json",
+        "--line-number",
+        "--no-heading",
+        "--smart-case",
+        "--stats",
+        "--word-regexp",
+        "-F",
+        "-S",
+        "-c",
+        "-i",
+        "-l",
+        "-n",
+        "-v",
+        "-w",
+    }
+)
+_RG_VALUE_OPTIONS = {
+    "--after-context": _INTEGER_VALUE,
+    "--before-context": _INTEGER_VALUE,
+    "--color": _COLOR_VALUE,
+    "--context": _INTEGER_VALUE,
+    "--file": _PATH_VALUE,
+    "--glob": _TEXT_VALUE,
+    "--max-count": _INTEGER_VALUE,
+    "--regexp": _TEXT_VALUE,
+    "--type": _TEXT_VALUE,
+    "--type-not": _TEXT_VALUE,
+    "-A": _INTEGER_VALUE,
+    "-B": _INTEGER_VALUE,
+    "-C": _INTEGER_VALUE,
+    "-T": _TEXT_VALUE,
+    "-e": _TEXT_VALUE,
+    "-f": _PATH_VALUE,
+    "-g": _TEXT_VALUE,
+    "-m": _INTEGER_VALUE,
+    "-t": _TEXT_VALUE,
 }
-_MUTATING_BRANCH_OPTIONS = {
-    "--copy",
-    "--delete",
-    "--edit-description",
-    "--move",
-    "-C",
-    "-D",
-    "-M",
-    "-c",
-    "-d",
-    "-m",
+
+_GIT_FLAG_OPTIONS = {
+    "status": frozenset(
+        {"--branch", "--long", "--short", "-b", "-s"}
+    ),
+    "diff": frozenset(
+        {
+            "--cached",
+            "--check",
+            "--exit-code",
+            "--name-only",
+            "--name-status",
+            "--no-color",
+            "--no-ext-diff",
+            "--no-patch",
+            "--numstat",
+            "--patch",
+            "--quiet",
+            "--shortstat",
+            "--staged",
+            "--stat",
+            "-p",
+            "-s",
+        }
+    ),
+    "log": frozenset(
+        {
+            "--all",
+            "--decorate",
+            "--graph",
+            "--merges",
+            "--name-only",
+            "--name-status",
+            "--no-decorate",
+            "--no-merges",
+            "--oneline",
+            "--patch",
+            "--reverse",
+            "--stat",
+            "-p",
+        }
+    ),
+    "show": frozenset(
+        {
+            "--name-only",
+            "--name-status",
+            "--no-color",
+            "--no-patch",
+            "--oneline",
+            "--patch",
+            "--stat",
+            "-p",
+            "-s",
+        }
+    ),
+    "grep": frozenset(
+        {
+            "--break",
+            "--count",
+            "--files-with-matches",
+            "--fixed-strings",
+            "--heading",
+            "--ignore-case",
+            "--line-number",
+            "--word-regexp",
+            "-F",
+            "-I",
+            "-c",
+            "-i",
+            "-l",
+            "-n",
+            "-w",
+        }
+    ),
+    "branch": frozenset(
+        {
+            "--all",
+            "--list",
+            "--remotes",
+            "--show-current",
+            "-a",
+            "-r",
+            "-v",
+            "-vv",
+        }
+    ),
 }
+_GIT_VALUE_OPTIONS = {
+    "status": {
+        "--porcelain": ("choice", frozenset({"v1", "v2"})),
+        "--untracked-files": ("choice", frozenset({"all", "no", "normal"})),
+    },
+    "diff": {"--color": _COLOR_VALUE, "--unified": _INTEGER_VALUE, "-U": _INTEGER_VALUE},
+    "log": {
+        "--author": _TEXT_VALUE,
+        "--format": _TEXT_VALUE,
+        "--grep": _TEXT_VALUE,
+        "--max-count": _INTEGER_VALUE,
+        "--pretty": _TEXT_VALUE,
+        "--since": _TEXT_VALUE,
+        "--until": _TEXT_VALUE,
+        "-n": _INTEGER_VALUE,
+    },
+    "show": {
+        "--color": _COLOR_VALUE,
+        "--format": _TEXT_VALUE,
+        "--pretty": _TEXT_VALUE,
+    },
+    "grep": {"--max-count": _INTEGER_VALUE, "--regexp": _TEXT_VALUE, "-e": _TEXT_VALUE},
+    "branch": {
+        "--contains": _TEXT_VALUE,
+        "--format": _TEXT_VALUE,
+        "--merged": _TEXT_VALUE,
+        "--no-contains": _TEXT_VALUE,
+        "--no-merged": _TEXT_VALUE,
+        "--sort": _TEXT_VALUE,
+    },
+}
+
+_GIT_ADD_FLAG_OPTIONS = frozenset(
+    {"--all", "--dry-run", "--patch", "--update", "-A", "-n", "-p", "-u"}
+)
 
 
 class PolicyAction(str, Enum):
@@ -63,6 +212,16 @@ class PolicyDecision:
     action: PolicyAction
     reason: str
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class _ParsedArguments:
+    positionals: tuple[tuple[str, bool], ...]
+    seen_options: frozenset[str]
+
+
+class _GrammarError(ValueError):
+    pass
 
 
 def _decision(action: PolicyAction, reason: str, **metadata: Any) -> PolicyDecision:
@@ -165,60 +324,164 @@ class PolicyEngine:
         if executable.endswith(".exe"):
             executable = executable[:-4]
 
-        readonly = self.read_only_commands.get(executable)
-        mutating = self.mutating_commands.get(executable)
         if executable not in self.read_only_commands and executable not in self.mutating_commands:
             return _decision(PolicyAction.DENY, "command is not allowlisted")
-        if executable == "rg" and self._contains_option(argv[1:], _UNSAFE_RG_OPTIONS):
-            return _decision(PolicyAction.DENY, "rg process-execution options are not allowed")
-        if executable == "git" and self._contains_option(argv[1:], _UNSAFE_GIT_OPTIONS):
-            return _decision(PolicyAction.DENY, "git execution options are not allowed")
-        if executable in {"git", "rg"} and self._arguments_escape_workspace(argv[2:]):
-            return _decision(PolicyAction.DENY, "command arguments escape workspace")
-        if readonly is None:
-            return _decision(PolicyAction.ALLOW, "read-only command allowed")
-        if len(argv) < 2:
-            return _decision(PolicyAction.DENY, "command requires an allowlisted subcommand")
+        try:
+            if executable == "rg":
+                if executable not in self.read_only_commands:
+                    raise _GrammarError("command is not configured as read-only")
+                self._validate_rg(argv[1:])
+                return _decision(PolicyAction.ALLOW, "read-only command allowed")
+            if executable == "git":
+                return self._evaluate_git(argv[1:])
+            if len(argv) != 1:
+                raise _GrammarError("configured command has no safe argument grammar")
+        except _GrammarError as exc:
+            return _decision(PolicyAction.DENY, str(exc))
+        return _decision(PolicyAction.ALLOW, "configured command without arguments allowed")
 
-        subcommand = argv[1].casefold()
+    def _validate_rg(self, arguments: Sequence[str]) -> None:
+        parsed = self._parse_options(arguments, _RG_FLAG_OPTIONS, _RG_VALUE_OPTIONS)
+        positionals = [value for value, _after_separator in parsed.positionals]
+        options_supply_pattern = bool(
+            parsed.seen_options.intersection({"--file", "--regexp", "-e", "-f"})
+        )
+        files_mode = "--files" in parsed.seen_options
+        if files_mode or options_supply_pattern:
+            path_operands = positionals
+        else:
+            if not positionals:
+                raise _GrammarError("rg requires a pattern")
+            path_operands = positionals[1:]
+        self._validate_paths(path_operands)
+
+    def _evaluate_git(self, arguments: Sequence[str]) -> PolicyDecision:
+        if not arguments:
+            raise _GrammarError("git requires an allowlisted subcommand")
+        subcommand = arguments[0].casefold()
+        readonly = self.read_only_commands.get("git")
+        mutating = self.mutating_commands.get("git")
         if mutating is not None and subcommand in mutating:
-            return _decision(PolicyAction.REQUIRE_APPROVAL, "mutating command requires approval")
-        if subcommand not in readonly:
-            return _decision(PolicyAction.DENY, "subcommand is not allowlisted")
-        if executable == "git" and subcommand == "branch" and self._branch_mutates(argv[2:]):
-            return _decision(PolicyAction.REQUIRE_APPROVAL, "branch mutation requires approval")
+            self._validate_git_mutation(subcommand, arguments[1:])
+            return _decision(
+                PolicyAction.REQUIRE_APPROVAL,
+                "mutating command requires approval",
+            )
+        if readonly is not None and subcommand not in readonly:
+            raise _GrammarError("subcommand is not allowlisted")
+        flags = _GIT_FLAG_OPTIONS.get(subcommand)
+        values = _GIT_VALUE_OPTIONS.get(subcommand)
+        if flags is None or values is None:
+            raise _GrammarError("subcommand has no safe option grammar")
+        parsed = self._parse_options(arguments[1:], flags, values)
+        positionals = [value for value, _after_separator in parsed.positionals]
+        path_operands = [
+            value for value, after_separator in parsed.positionals if after_separator
+        ]
+
+        if subcommand == "status":
+            self._validate_paths(positionals)
+        elif subcommand == "grep":
+            pattern_supplied = bool(parsed.seen_options.intersection({"--regexp", "-e"}))
+            before_separator = [
+                value for value, after_separator in parsed.positionals if not after_separator
+            ]
+            if not pattern_supplied and not before_separator:
+                raise _GrammarError("git grep requires a pattern")
+            self._validate_paths(path_operands)
+        elif subcommand == "branch":
+            if positionals and "--list" not in parsed.seen_options:
+                return _decision(
+                    PolicyAction.REQUIRE_APPROVAL,
+                    "branch mutation requires approval",
+                )
+        else:
+            self._validate_paths(path_operands)
+            self._validate_obvious_paths(positionals)
         return _decision(PolicyAction.ALLOW, "read-only command allowed")
 
-    @staticmethod
-    def _contains_option(arguments: Sequence[str], blocked: set[str]) -> bool:
-        return any(
-            argument in blocked
-            or any(
-                argument.startswith(option + "=")
-                for option in blocked
-                if option.startswith("--")
-            )
-            for argument in arguments
-        )
+    def _validate_git_mutation(self, subcommand: str, arguments: Sequence[str]) -> None:
+        if subcommand == "add":
+            parsed = self._parse_options(arguments, _GIT_ADD_FLAG_OPTIONS, {})
+            self._validate_paths([value for value, _after in parsed.positionals])
+            return
+        if any(argument.startswith("-") for argument in arguments):
+            raise _GrammarError("mutation option is not in the safe grammar")
+        self._validate_obvious_paths(arguments)
 
-    @staticmethod
-    def _branch_mutates(arguments: Sequence[str]) -> bool:
-        if any(argument in _MUTATING_BRANCH_OPTIONS for argument in arguments):
-            return True
-        return any(not argument.startswith("-") for argument in arguments)
+    def _parse_options(
+        self,
+        arguments: Sequence[str],
+        flag_options: Collection[str],
+        value_options: Mapping[str, tuple[str, frozenset[str] | None]],
+    ) -> _ParsedArguments:
+        positionals: list[tuple[str, bool]] = []
+        seen_options: set[str] = set()
+        after_separator = False
+        index = 0
+        while index < len(arguments):
+            argument = arguments[index]
+            if not after_separator and argument == "--":
+                after_separator = True
+                index += 1
+                continue
+            if not after_separator and argument.startswith("-") and argument != "-":
+                option, separator, inline_value = argument.partition("=")
+                if option in flag_options:
+                    if separator:
+                        raise _GrammarError(f"option does not accept a value: {option}")
+                    seen_options.add(option)
+                    index += 1
+                    continue
+                rule = value_options.get(option)
+                if rule is None:
+                    raise _GrammarError(f"option is not in the safe grammar: {option}")
+                if separator:
+                    value = inline_value
+                else:
+                    index += 1
+                    if index >= len(arguments):
+                        raise _GrammarError(f"option requires a value: {option}")
+                    value = arguments[index]
+                self._validate_option_value(option, value, rule)
+                seen_options.add(option)
+                index += 1
+                continue
+            positionals.append((argument, after_separator))
+            index += 1
+        return _ParsedArguments(tuple(positionals), frozenset(seen_options))
 
-    def _arguments_escape_workspace(self, arguments: Sequence[str]) -> bool:
-        for argument in arguments:
-            if argument.startswith("-"):
-                continue
-            candidate = Path(argument)
-            if not candidate.is_absolute() and ".." not in candidate.parts:
-                continue
+    def _validate_option_value(
+        self,
+        option: str,
+        value: str,
+        rule: tuple[str, frozenset[str] | None],
+    ) -> None:
+        if not value:
+            raise _GrammarError(f"option requires a non-empty value: {option}")
+        kind, choices = rule
+        if kind == "path":
             try:
-                self.resolve_path(argument)
-            except (OSError, ValueError):
-                return True
-        return False
+                self.resolve_path(value)
+            except (OSError, ValueError) as exc:
+                raise _GrammarError(f"option path escapes workspace: {option}") from exc
+        elif kind == "integer" and not value.isdecimal():
+            raise _GrammarError(f"option requires a non-negative integer: {option}")
+        elif kind == "choice" and choices is not None and value.casefold() not in choices:
+            raise _GrammarError(f"option value is not allowlisted: {option}")
+
+    def _validate_paths(self, values: Sequence[str]) -> None:
+        for value in values:
+            try:
+                self.resolve_path(value)
+            except (OSError, ValueError) as exc:
+                raise _GrammarError("command path escapes workspace") from exc
+
+    def _validate_obvious_paths(self, values: Sequence[str]) -> None:
+        for value in values:
+            candidate = Path(value)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                self._validate_paths([value])
 
     @staticmethod
     def _evaluate_url(raw_url: Any) -> PolicyDecision:
