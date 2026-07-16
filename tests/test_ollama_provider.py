@@ -1,7 +1,9 @@
 import json
+import urllib.error
 
 import pytest
 
+from cyberdeck.models import ErrorCategory
 from cyberdeck.providers.base import ModelResponse, ProviderError
 from cyberdeck.providers.ollama import OllamaProvider
 
@@ -88,8 +90,63 @@ def test_ollama_rejects_invalid_json():
 
     provider = OllamaProvider(opener=lambda *_args, **_kwargs: InvalidResponse())
 
-    with pytest.raises(ProviderError, match="invalid JSON"):
+    with pytest.raises(ProviderError, match="invalid JSON") as captured:
         provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert captured.value.category is ErrorCategory.PROVIDER
+    assert captured.value.code == "invalid_response"
+
+
+def test_ollama_timeout_has_stable_category_and_code_without_secret():
+    def opener(*_args, **_kwargs):
+        raise TimeoutError("token=timeout-secret")
+
+    provider = OllamaProvider(opener=opener)
+
+    with pytest.raises(ProviderError) as captured:
+        provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert captured.value.category is ErrorCategory.TIMEOUT
+    assert captured.value.code == "timeout"
+    assert captured.value.retryable is True
+    assert "timeout-secret" not in str(captured.value)
+
+
+def test_ollama_http_error_has_stable_provider_category_status_and_retryability():
+    def opener(*_args, **_kwargs):
+        raise urllib.error.HTTPError(
+            "http://127.0.0.1:11434/api/generate",
+            503,
+            "token=http-secret",
+            None,
+            None,
+        )
+
+    provider = OllamaProvider(opener=opener)
+
+    with pytest.raises(ProviderError) as captured:
+        provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert captured.value.category is ErrorCategory.PROVIDER
+    assert captured.value.code == "http_error"
+    assert captured.value.status_code == 503
+    assert captured.value.retryable is True
+    assert "http-secret" not in str(captured.value)
+
+
+def test_ollama_url_error_has_stable_provider_category_without_secret():
+    def opener(*_args, **_kwargs):
+        raise urllib.error.URLError("token=connection-secret")
+
+    provider = OllamaProvider(opener=opener)
+
+    with pytest.raises(ProviderError) as captured:
+        provider.generate("prompt", temperature=0.2, max_tokens=64)
+
+    assert captured.value.category is ErrorCategory.PROVIDER
+    assert captured.value.code == "connection_error"
+    assert captured.value.retryable is True
+    assert "connection-secret" not in str(captured.value)
 
 
 def test_ollama_transport_error_does_not_leak_exception_secret():
@@ -103,6 +160,8 @@ def test_ollama_transport_error_does_not_leak_exception_secret():
 
     assert "do-not-leak" not in str(captured.value)
     assert "Ollama" in str(captured.value)
+    assert captured.value.category is ErrorCategory.PROVIDER
+    assert captured.value.code == "transport_error"
 
 
 @pytest.mark.parametrize(

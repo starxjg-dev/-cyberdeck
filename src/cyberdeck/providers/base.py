@@ -6,6 +6,8 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from cyberdeck.models import ErrorCategory
+
 
 @dataclass(frozen=True)
 class ModelResponse:
@@ -64,10 +66,18 @@ class ProviderError(RuntimeError):
         self,
         message: str,
         *,
+        category: ErrorCategory = ErrorCategory.PROVIDER,
+        code: str = "provider_error",
         retryable: bool = False,
         status_code: int | None = None,
     ) -> None:
         super().__init__(message)
+        if not isinstance(category, ErrorCategory):
+            raise ValueError("provider error category must be an ErrorCategory")
+        if not isinstance(code, str) or not code.strip():
+            raise ValueError("provider error code must be non-empty text")
+        self.category = category
+        self.code = code
         self.retryable = retryable
         self.status_code = status_code
 

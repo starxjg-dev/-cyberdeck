@@ -10,6 +10,7 @@ from collections.abc import Callable, Mapping
 from typing import Any
 from urllib.parse import urlsplit
 
+from cyberdeck.models import ErrorCategory
 from cyberdeck.providers.base import ModelResponse, ProviderError
 
 
@@ -74,21 +75,28 @@ class OllamaProvider:
         except urllib.error.HTTPError as exc:
             raise ProviderError(
                 f"Ollama returned HTTP status {exc.code}; verify the model is installed",
+                code="http_error",
                 retryable=500 <= exc.code < 600,
                 status_code=exc.code,
             ) from None
         except TimeoutError:
             raise ProviderError(
                 "Ollama request timed out; reduce the prompt or increase the timeout",
+                category=ErrorCategory.TIMEOUT,
+                code="timeout",
                 retryable=True,
             ) from None
         except (OSError, urllib.error.URLError):
             raise ProviderError(
                 "Could not reach Ollama; start the service with `ollama serve`",
+                code="connection_error",
                 retryable=True,
             ) from None
         except Exception:
-            raise ProviderError("Ollama request failed; verify the local service") from None
+            raise ProviderError(
+                "Ollama request failed; verify the local service",
+                code="transport_error",
+            ) from None
         duration_ms = max(0, int(round((self.clock() - started) * 1000)))
         payload = self._parse_payload(raw)
         return ModelResponse(
@@ -105,18 +113,33 @@ class OllamaProvider:
 
     def _parse_payload(self, raw: Any) -> Mapping[str, Any]:
         if not isinstance(raw, bytes):
-            raise ProviderError("Ollama returned a non-byte response")
+            raise ProviderError(
+                "Ollama returned a non-byte response",
+                code="invalid_response",
+            )
         if len(raw) > self.max_response_bytes:
-            raise ProviderError("Ollama response exceeded the configured byte limit")
+            raise ProviderError(
+                "Ollama response exceeded the configured byte limit",
+                code="response_too_large",
+            )
         try:
             payload = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
-            raise ProviderError("Ollama returned invalid JSON") from None
+            raise ProviderError(
+                "Ollama returned invalid JSON",
+                code="invalid_response",
+            ) from None
         if not isinstance(payload, Mapping):
-            raise ProviderError("Ollama returned a JSON value instead of an object")
+            raise ProviderError(
+                "Ollama returned a JSON value instead of an object",
+                code="invalid_response",
+            )
         text = payload.get("response")
         if not isinstance(text, str) or not text.strip():
-            raise ProviderError("Ollama response did not contain non-empty response text")
+            raise ProviderError(
+                "Ollama response did not contain non-empty response text",
+                code="invalid_response",
+            )
         self._optional_count(payload, "eval_count")
         self._optional_count(payload, "prompt_eval_count")
         return payload
@@ -127,7 +150,10 @@ class OllamaProvider:
         if value is None:
             return None
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-            raise ProviderError(f"Ollama returned an invalid {key}")
+            raise ProviderError(
+                f"Ollama returned an invalid {key}",
+                code="invalid_response",
+            )
         return value
 
     @classmethod
