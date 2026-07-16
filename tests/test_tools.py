@@ -1,10 +1,13 @@
 import socket
 import subprocess
+import urllib.request
+
+import pytest
 
 from cyberdeck.models import ErrorCategory, ToolRequest
 from cyberdeck.policy import PolicyEngine
 from cyberdeck.tools import build_default_registry
-from cyberdeck.tools.http import is_public_host
+from cyberdeck.tools.http import SafeRedirectHandler, UnsafeUrlError, is_public_host
 
 
 def test_file_read_is_bounded(tmp_path):
@@ -155,11 +158,46 @@ def test_handler_exception_is_returned_as_typed_error_without_secret(tmp_path):
     assert "do-not-leak" not in result.error_message
 
 
+def test_process_safely_truncates_multibyte_stdout_and_stderr(tmp_path):
+    def runner(argv, **_kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="界" * 10,
+            stderr="🙂" * 10,
+        )
+
+    registry = build_default_registry(
+        tmp_path,
+        runner=runner,
+        max_process_output_bytes=5,
+    )
+    result = registry.execute(
+        ToolRequest("1", "process.run", {"argv": ["git", "status"]}),
+        PolicyEngine(tmp_path),
+    )
+
+    assert result.success
+    assert len(result.output.encode("utf-8")) <= 5
+    assert len(result.metadata["stderr"].encode("utf-8")) <= 5
+    assert result.metadata["truncated"] is True
+
+
 def test_private_addresses_are_rejected():
     def resolver(*_args, **_kwargs):
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]
 
     assert not is_public_host("example.test", resolver=resolver)
+
+
+def test_mixed_public_and_private_dns_answers_are_rejected():
+    def resolver(*_args, **_kwargs):
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.7", 443)),
+        ]
+
+    assert not is_public_host("mixed.example.test", resolver=resolver)
 
 
 def test_localhost_is_rejected_even_if_a_resolver_claims_it_is_public():
@@ -189,6 +227,39 @@ class Response:
 
 def public_resolver(*_args, **_kwargs):
     return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+
+
+def test_redirect_handler_validates_each_hop_before_following():
+    resolved_hosts = []
+
+    def resolver(host, *_args, **_kwargs):
+        resolved_hosts.append(host)
+        address = "127.0.0.1" if host == "private-hop.example.test" else "93.184.216.34"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, 443))]
+
+    handler = SafeRedirectHandler(resolver)
+    initial = urllib.request.Request("https://origin.example.test/start")
+    first_hop = handler.redirect_request(
+        initial,
+        None,
+        302,
+        "Found",
+        {},
+        "https://public-hop.example.test/one",
+    )
+
+    with pytest.raises(UnsafeUrlError):
+        handler.redirect_request(
+            first_hop,
+            None,
+            302,
+            "Found",
+            {},
+            "https://private-hop.example.test/two",
+        )
+
+    assert first_hop.full_url == "https://public-hop.example.test/one"
+    assert resolved_hosts == ["public-hop.example.test", "private-hop.example.test"]
 
 
 def test_http_get_validates_and_bounds_public_response(tmp_path):

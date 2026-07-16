@@ -81,7 +81,9 @@ def _validate_public_url(url: str, resolver: Resolver) -> str:
     return host
 
 
-class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Validate every redirect target before urllib constructs the next request."""
+
     def __init__(self, resolver: Resolver) -> None:
         super().__init__()
         self.resolver = resolver
@@ -105,7 +107,7 @@ class HttpGetHandler:
             raise ValueError("HTTP limits must be positive")
         self.resolver = resolver
         self.opener = (
-            urllib.request.build_opener(_SafeRedirectHandler(resolver))
+            urllib.request.build_opener(SafeRedirectHandler(resolver))
             if opener is None
             else opener
         )
@@ -203,4 +205,4 @@ class HttpGetHandler:
         )
 
 
-__all__ = ["HttpGetHandler", "UnsafeUrlError", "is_public_host"]
+__all__ = ["HttpGetHandler", "SafeRedirectHandler", "UnsafeUrlError", "is_public_host"]
